@@ -12,6 +12,9 @@ import netty.netty.study.server.handler.NettyServerBasicHandler;
 
 import java.net.InetSocketAddress;
 
+import static io.netty.channel.ChannelOption.SO_REUSEADDR;
+
+
 public class NettyServer {
     private final int port;
     private ServerBootstrap serverBootstrap;
@@ -37,6 +40,7 @@ public class NettyServer {
             serverBootstrap.group(group)
                     .channel(NioServerSocketChannel.class)
                     .localAddress(new InetSocketAddress(port))
+                    .option(SO_REUSEADDR, true)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
 
                         @Override
