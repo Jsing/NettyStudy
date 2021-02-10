@@ -1,4 +1,4 @@
-package netty.netty.study.server;
+package netty.netty.study;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
