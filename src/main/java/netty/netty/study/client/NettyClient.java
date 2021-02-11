@@ -47,10 +47,8 @@ public class NettyClient {
 
     public boolean connect(String ip, int port) {
 
-        assert this.channel != null : "channel is null";
-
         try {
-            if (this.channel.isActive()) {
+            if (this.channel!=null && this.channel.isActive()) {
                 this.channel.close().sync();
             }
 
