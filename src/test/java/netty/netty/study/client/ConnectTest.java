@@ -7,10 +7,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 
 @SpringBootTest
-@DisplayName("Netty Client Test")
-public class NettyClientTest {
+@DisplayName("연결")
+public class ConnectTest {
 
-    final static Logger logger = Logger.getLogger(NettyClientTest.class);
+    final static Logger logger = Logger.getLogger(ConnectTest.class);
     final private int serverPort = 12345;
     final private String serverIp = "127.0.0.1";
     private NettyServer server;
@@ -33,7 +33,8 @@ public class NettyClientTest {
     }
 
     @Test
-    void 연결_성공() {
+    @DisplayName("연결 성공")
+    void connectionSuccess() {
 
         client = new NettyClient();
         client.init();
@@ -50,7 +51,8 @@ public class NettyClientTest {
     }
 
     @Test
-    void 연결_실패_서버포트이상() {
+    @DisplayName("연결 실패-엉뚱한 포트")
+    void connectionFail() {
 
         client = new NettyClient();
         client.init();
@@ -65,7 +67,8 @@ public class NettyClientTest {
     }
 
     @Test
-    void 두개_연결_성공() {
+    @DisplayName("두개의 Client 연결")
+    void twoClientConnection() {
 
         NettyClient client1 = new NettyClient();
         client1.init();
