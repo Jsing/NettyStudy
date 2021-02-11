@@ -13,8 +13,10 @@ public class NettyServerBasicHandler extends ChannelInboundHandlerAdapter {
 
         ByteBuf in = (ByteBuf) msg;
         System.out.println("Server received: " + in.toString(CharsetUtil.UTF_8));
-        ctx.write(in);
+        ctx.write(in); // this is asyncronous.
 
+        // @TODO : super.channelRead()가 호출되면 레퍼런스 관련 오류가 발생하는데 원인 분석  필요함
+        // @TODO : 그리고 msg 레퍼런스 카운트를 감소시키는 것으로 보인다.
         super.channelRead(ctx, msg);
     }
 
@@ -23,7 +25,7 @@ public class NettyServerBasicHandler extends ChannelInboundHandlerAdapter {
 
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
 
-        super.channelReadComplete(ctx);
+        //super.channelReadComplete(ctx);
     }
 
     @Override
@@ -32,6 +34,6 @@ public class NettyServerBasicHandler extends ChannelInboundHandlerAdapter {
         cause.printStackTrace();
         ctx.close();
 
-        super.exceptionCaught(ctx, cause);
+        //super.exceptionCaught(ctx, cause);
     }
 }

@@ -40,7 +40,7 @@ public class NettyServer {
             serverBootstrap.group(group)
                     .channel(NioServerSocketChannel.class)
                     .localAddress(new InetSocketAddress(port))
-                    .option(SO_REUSEADDR, true)
+//                    .option(SO_REUSEADDR, true)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
 
                         @Override
