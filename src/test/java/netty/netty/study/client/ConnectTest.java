@@ -1,7 +1,6 @@
 package netty.netty.study.client;
 
 import netty.netty.study.server.NettyServer;
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -9,8 +8,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 @DisplayName("연결")
 public class ConnectTest {
-
-    final static Logger logger = Logger.getLogger(ConnectTest.class);
     final private int serverPort = 12345;
     final private String serverIp = "127.0.0.1";
     private NettyServer server;

@@ -83,4 +83,8 @@ public class NettyClient {
         }
     }
 
+    public InetSocketAddress getLocalAddress(){
+        return (InetSocketAddress)channel.localAddress();
+    }
+
 }
