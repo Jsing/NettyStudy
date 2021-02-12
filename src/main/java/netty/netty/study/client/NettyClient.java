@@ -7,6 +7,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.util.CharsetUtil;
 import netty.netty.study.client.handler.NettyClientBasicHandler;
 
 import java.net.InetSocketAddress;
@@ -34,7 +37,10 @@ public class NettyClient {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             socketChannel.pipeline().addLast(
-                                    new NettyClientBasicHandler());
+                                    new LineBasedFrameDecoder(80),
+                                    new StringDecoder(CharsetUtil.UTF_8),
+                                    new NettyClientBasicHandler()
+                            );
 
                         }
                     });
@@ -48,7 +54,7 @@ public class NettyClient {
     public boolean connect(String ip, int port) {
 
         try {
-            if (this.channel!=null && this.channel.isActive()) {
+            if (this.channel != null && this.channel.isActive()) {
                 this.channel.close().sync();
             }
 
@@ -83,8 +89,8 @@ public class NettyClient {
         }
     }
 
-    public InetSocketAddress getLocalAddress(){
-        return (InetSocketAddress)channel.localAddress();
+    public InetSocketAddress getLocalAddress() {
+        return (InetSocketAddress) channel.localAddress();
     }
 
 }

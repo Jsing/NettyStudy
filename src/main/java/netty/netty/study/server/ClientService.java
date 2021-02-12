@@ -1,5 +1,6 @@
 package netty.netty.study.server;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
 import java.util.concurrent.ScheduledFuture;
@@ -33,7 +34,7 @@ public class ClientService {
         channel.close().sync();
     }
 
-    public void writeMessage(byte[] msg) {
+    public void writeMessage(ByteBuf msg) {
 
         channel.writeAndFlush(msg);
     }

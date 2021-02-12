@@ -18,7 +18,6 @@ public class ClientChannelInitializer extends ChannelInitializer<SocketChannel> 
     protected void initChannel(SocketChannel socketChannel) throws Exception {
 
         socketChannel.pipeline().addLast(new ClientServiceHandler(listener));
-        socketChannel.pipeline().addLast(new ChannelOutboundHandlerAdapter());
     }
 
 }

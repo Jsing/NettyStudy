@@ -7,7 +7,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 
 
-public class NettyClientBasicHandler extends SimpleChannelInboundHandler<ByteBuf> {
+public class NettyClientBasicHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -36,8 +36,8 @@ public class NettyClientBasicHandler extends SimpleChannelInboundHandler<ByteBuf
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf) throws Exception {
-        System.out.println("channelHandlerContext = " + channelHandlerContext + ", byteBuf = " + byteBuf.toString(CharsetUtil.UTF_8));
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, String msg) throws Exception {
+        System.out.println("channelHandlerContext = " + channelHandlerContext + ", byteBuf = " + msg.toString());
         System.out.println("NettyClientBasicHandler.channelRead0");
     }
 }

@@ -34,6 +34,7 @@ public class NettyServer implements ClientActiveListener {
                     .channel(NioServerSocketChannel.class)
                     .localAddress(new InetSocketAddress(port))
                     .option(ChannelOption.SO_REUSEADDR, true)
+                    .childOption(ChannelOption.TCP_NODELAY, true)
                     .childHandler(new ClientChannelInitializer(this));
 
             ChannelFuture future = serverBootstrap.bind().sync();
@@ -88,5 +89,10 @@ public class NettyServer implements ClientActiveListener {
         System.out.println(clientServiceMap);
         System.out.println("[Server] Accepted client address = " + clientAddress.toString());
 
+    }
+
+    public void waitForClient(InetSocketAddress clientAddress) throws InterruptedException {
+        Thread.sleep(1000); //@TODO : 개선할 수 있는 더 좋은 방법을 생각해 보자.
+        return;
     }
 }

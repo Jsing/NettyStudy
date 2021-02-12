@@ -1,5 +1,6 @@
 package netty.netty.study.client;
 
+import io.netty.buffer.Unpooled;
 import netty.netty.study.server.ClientService;
 import netty.netty.study.server.NettyServer;
 import org.apache.log4j.Logger;
@@ -41,15 +42,15 @@ public class FrameDecoderTest {
 
         boolean connected = client.connect(serverIp, serverPort);
 
-        Thread.sleep(1000); //@TODO : 개선할 수 있는 더 좋은 방법을 생각해 보자.
-
         Assertions.assertEquals(true, connected);
+
+        server.waitForClient(client.getLocalAddress());
 
         System.out.println("[Client] my address = " + client.getLocalAddress().toString());
 
         ClientService service = server.getClientService(client.getLocalAddress().toString());
 
-        service.writeMessage("han joo seung".getBytes(StandardCharsets.UTF_8));
+        service.writeMessage(Unpooled.copiedBuffer("Jsing Test".toCharArray(), StandardCharsets.UTF_8));
 
         Thread.sleep(1000);
     }
