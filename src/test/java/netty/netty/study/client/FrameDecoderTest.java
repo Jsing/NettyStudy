@@ -39,17 +39,19 @@ public class FrameDecoderTest {
 
         client.init();
 
-        boolean connectionResult = client.connect(serverIp, serverPort);
+        boolean connected = client.connect(serverIp, serverPort);
 
-        Assertions.assertEquals(true, connectionResult);
+        Thread.sleep(1000); //@TODO : 개선할 수 있는 더 좋은 방법을 생각해 보자.
 
-        System.out.println("client address s= " + client.getLocalAddress().toString());
+        Assertions.assertEquals(true, connected);
+
+        System.out.println("[Client] my address = " + client.getLocalAddress().toString());
 
         ClientService service = server.getClientService(client.getLocalAddress().toString());
 
         service.writeMessage("han joo seung".getBytes(StandardCharsets.UTF_8));
 
-        Thread.sleep(3000);
+        Thread.sleep(1000);
     }
 
 }

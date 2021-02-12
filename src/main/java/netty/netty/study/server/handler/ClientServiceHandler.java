@@ -7,25 +7,25 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
+import netty.netty.study.server.ClientActiveListener;
+import netty.netty.study.server.ClientService;
 
-public class NettyServerBasicHandler extends ChannelInboundHandlerAdapter {
+import java.net.InetSocketAddress;
+import java.util.concurrent.ConcurrentHashMap;
 
-    private Channel channel;
+public class ClientServiceHandler extends ChannelInboundHandlerAdapter {
 
-    public void config() {
+    final private ClientActiveListener activeListener;
 
-    }
+    public ClientServiceHandler(ClientActiveListener activeListener) {
 
-    public void writeMessage(byte[] msg) {
-
-        channel.writeAndFlush(msg);
+        this.activeListener = activeListener;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
 
-        channel = ctx.channel();
-
+        activeListener.clientActivated(ctx.channel(), (InetSocketAddress) ctx.channel().remoteAddress());
         super.channelActive(ctx);
     }
 
@@ -33,7 +33,7 @@ public class NettyServerBasicHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
         ByteBuf in = (ByteBuf) msg;
-        System.out.println("Server received: " + in.toString(CharsetUtil.UTF_8));
+        System.out.println("[Server] msg received : " + in.toString(CharsetUtil.UTF_8));
         //ctx.write(in); // this is asyncronous.
 
         // @TODO : super.channelRead()가 호출되면 레퍼런스 관련 오류가 발생하는데 원인 분석  필요함
