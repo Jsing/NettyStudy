@@ -1,13 +1,9 @@
 package netty.netty.study.client;
 
-import io.netty.buffer.Unpooled;
 import netty.netty.study.server.ClientService;
 import netty.netty.study.server.NettyServer;
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.nio.charset.StandardCharsets;
 
 
 @SpringBootTest
@@ -36,7 +32,7 @@ public class FrameDecoderTest {
     @Test
     @DisplayName("Message Boundary")
     void messageBoundary() throws InterruptedException {
-        NettyClient client = new NettyClient();
+        SampleCam client = new SampleCam();
 
         client.init();
 

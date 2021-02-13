@@ -13,6 +13,7 @@ import io.netty.util.CharsetUtil;
 import netty.netty.study.client.handler.NettyClientBasicHandler;
 import netty.netty.study.dto.Copyable;
 import netty.netty.study.dto.LastStatus;
+import netty.netty.study.dto.Updatable;
 
 import java.net.InetSocketAddress;
 
@@ -20,14 +21,13 @@ import java.net.InetSocketAddress;
  * @TODO : Bootstrap 재연결 시에도 사용 가능한지 확인
  * @TODO : Channel 재연결 시에도 사용 가능한지 확인
  */
-public class NettyClient {
-
+public class SampleCam {
 
     private LastStatus<String> lastStatus;
     private Bootstrap bootstrap;
     private Channel channel;
 
-    public NettyClient() {
+    public SampleCam() {
         lastStatus = new LastStatus<String>();
     }
 
@@ -46,7 +46,7 @@ public class NettyClient {
 
             bootstrap.group(group)
                     .channel(NioSocketChannel.class)
-                    .handler(new ClientChannelInitializer(lastStatus));
+                    .handler(new ClientChannelInitializer((Updatable<String>) lastStatus));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -73,6 +73,7 @@ public class NettyClient {
 
         } catch (Exception e) {
 
+            bootstrap.config().group().shutdownGracefully();
             e.printStackTrace();
             return false;
 

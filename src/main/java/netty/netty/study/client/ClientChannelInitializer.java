@@ -4,13 +4,14 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import netty.netty.study.client.handler.NettyClientBasicHandler;
 import netty.netty.study.dto.Updatable;
 import netty.netty.study.server.ClientActiveListener;
 import netty.netty.study.server.handler.ClientServiceHandler;
 
-public class ClientChannelInitializer  extends ChannelInitializer<SocketChannel> {
+public class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     final private Updatable<String> updateListener;
 
@@ -21,10 +22,14 @@ public class ClientChannelInitializer  extends ChannelInitializer<SocketChannel>
     @Override
     protected void initChannel(SocketChannel socketChannel) throws Exception {
         socketChannel.pipeline().addLast(
-                new LineBasedFrameDecoder(1500),
+                // Up-stream
+                new LineBasedFrameDecoder(1500, true, true),
                 new StringDecoder(CharsetUtil.UTF_8),
-                new NettyClientBasicHandler(this.updateListener)
-        );
+                new NettyClientBasicHandler(this.updateListener),
+
+                // Down-stream
+                new StringEncoder(CharsetUtil.UTF_8));
+
 
     }
 

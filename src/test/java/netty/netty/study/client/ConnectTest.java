@@ -11,7 +11,7 @@ public class ConnectTest {
     final private int serverPort = 12345;
     final private String serverIp = "127.0.0.1";
     private NettyServer server;
-    private NettyClient client;
+    private SampleCam client;
 
     @BeforeEach
     void contextLoad() {
@@ -33,7 +33,7 @@ public class ConnectTest {
     @DisplayName("연결 성공")
     void connectionSuccess() {
 
-        client = new NettyClient();
+        client = new SampleCam();
         client.init();
 
         try {
@@ -47,30 +47,15 @@ public class ConnectTest {
         }
     }
 
-    @Test
-    @DisplayName("연결 실패-엉뚱한 포트")
-    void connectionFail() {
-
-        client = new NettyClient();
-        client.init();
-
-        try {
-            Assertions.assertEquals(false, client.connect(serverIp, serverPort-1));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        client.disconnect();
-    }
 
     @Test
     @DisplayName("두개의 Client 연결")
     void twoClientConnection() {
 
-        NettyClient client1 = new NettyClient();
+        SampleCam client1 = new SampleCam();
         client1.init();
 
-        NettyClient client2 = new NettyClient();
+        SampleCam client2 = new SampleCam();
         client2.init();
 
         try {
@@ -83,6 +68,61 @@ public class ConnectTest {
         client1.disconnect();
         client2.disconnect();
 
+    }
+
+
+    @Test
+    @DisplayName("원격 서버 없음")
+    void noServer() {
+        client = new SampleCam();
+        client.init();
+
+        try {
+            Assertions.assertEquals(false, client.connect("192.168.21.12", serverPort));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        client.disconnect();
+    }
+
+    @Test
+    @DisplayName("원격 서버 포트 없음")
+    void noServerPort() {
+        client = new SampleCam();
+        client.init();
+
+        try {
+            Assertions.assertEquals(false, client.connect(serverIp, serverPort-1));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        client.disconnect();
+    }
+
+
+    @Test
+    @DisplayName("연결 실패-엉뚱한 포트")
+    void reconnect() {
+
+        client = new SampleCam();
+        client.init();
+
+        try {
+            boolean connected = client.connect(serverIp, serverPort-1);
+
+            Assertions.assertEquals(false, connected);
+
+            connected = client.connect(serverIp, serverPort);
+
+            Assertions.assertEquals(true, connected);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        client.disconnect();
     }
 
 
