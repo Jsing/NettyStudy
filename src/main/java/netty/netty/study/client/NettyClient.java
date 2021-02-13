@@ -11,6 +11,8 @@ import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.util.CharsetUtil;
 import netty.netty.study.client.handler.NettyClientBasicHandler;
+import netty.netty.study.dto.Copyable;
+import netty.netty.study.dto.LastStatus;
 
 import java.net.InetSocketAddress;
 
@@ -20,8 +22,19 @@ import java.net.InetSocketAddress;
  */
 public class NettyClient {
 
+
+    private LastStatus<String> lastStatus;
     private Bootstrap bootstrap;
     private Channel channel;
+
+    public NettyClient() {
+        lastStatus = new LastStatus<String>();
+    }
+
+    public Copyable lastStatus() {
+
+        return lastStatus; // @TODO 이렇게 참조를 반환하는 것이 옳은가?
+    }
 
     public void init() {
 
@@ -33,17 +46,7 @@ public class NettyClient {
 
             bootstrap.group(group)
                     .channel(NioSocketChannel.class)
-                    .handler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            socketChannel.pipeline().addLast(
-                                    new LineBasedFrameDecoder(80),
-                                    new StringDecoder(CharsetUtil.UTF_8),
-                                    new NettyClientBasicHandler()
-                            );
-
-                        }
-                    });
+                    .handler(new ClientChannelInitializer(lastStatus));
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -34,7 +34,7 @@ public class ClientService {
         channel.close().sync();
     }
 
-    public void writeMessage(ByteBuf msg) {
+    public void writeMessage(String msg) {
 
         channel.writeAndFlush(msg);
     }

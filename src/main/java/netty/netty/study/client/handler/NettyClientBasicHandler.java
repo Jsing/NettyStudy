@@ -5,9 +5,16 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
+import netty.netty.study.dto.Updatable;
 
 
 public class NettyClientBasicHandler extends SimpleChannelInboundHandler<String> {
+
+    final private Updatable updateListener;
+
+    public NettyClientBasicHandler(Updatable updateListener) {
+        this.updateListener = updateListener;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -37,7 +44,8 @@ public class NettyClientBasicHandler extends SimpleChannelInboundHandler<String>
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, String msg) throws Exception {
-        System.out.println("channelHandlerContext = " + channelHandlerContext + ", byteBuf = " + msg.toString());
-        System.out.println("NettyClientBasicHandler.channelRead0");
+        System.out.println("[Client] BasicHandler.channelRead0 = " +  msg.toString());
+
+        updateListener.update(msg);
     }
 }

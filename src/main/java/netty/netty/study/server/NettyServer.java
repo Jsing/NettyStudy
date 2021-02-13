@@ -3,9 +3,7 @@ package netty.netty.study.server;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import netty.netty.study.server.handler.ClientServiceHandler;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,7 +33,7 @@ public class NettyServer implements ClientActiveListener {
                     .localAddress(new InetSocketAddress(port))
                     .option(ChannelOption.SO_REUSEADDR, true)
                     .childOption(ChannelOption.TCP_NODELAY, true)
-                    .childHandler(new ClientChannelInitializer(this));
+                    .childHandler(new ServerServiceChannelInitializer(this));
 
             ChannelFuture future = serverBootstrap.bind().sync();
 

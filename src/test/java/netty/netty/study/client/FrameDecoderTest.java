@@ -50,9 +50,22 @@ public class FrameDecoderTest {
 
         ClientService service = server.getClientService(client.getLocalAddress().toString());
 
-        service.writeMessage(Unpooled.copiedBuffer("Jsing Test".toCharArray(), StandardCharsets.UTF_8));
+        service.writeMessage("1.Incomplete half message");
 
-        Thread.sleep(1000);
+        Thread.sleep(5000);
+
+        service.writeMessage(" 2.complete half message\n");
+
+        Thread.sleep(3000);
+
+        Assertions.assertEquals( "1.Incomplete half message 2.complete half message", client.lastStatus().copy() );
+
+    }
+
+    @Test
+    @DisplayName("transferContent")
+    void transferContent() {
+
     }
 
 }
