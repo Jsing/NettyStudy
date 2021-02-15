@@ -114,10 +114,6 @@ public class ConnectTest {
 
             Assertions.assertEquals(false, connected);
 
-            connected = client.connect(serverIp, serverPort);
-
-            Assertions.assertEquals(true, connected);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
