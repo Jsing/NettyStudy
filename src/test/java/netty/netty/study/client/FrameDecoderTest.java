@@ -36,22 +36,25 @@ public class FrameDecoderTest {
 
         client.init();
 
+        // 서버 접속
         boolean connected = client.connect(serverIp, serverPort);
 
         Assertions.assertEquals(true, connected);
 
+        // 서버 접속 대기 
         server.waitForClient(client.getLocalAddress());
 
-        System.out.println("[Client] my address = " + client.getLocalAddress().toString());
-
+        // 서버에 접속한 클라이언트 서비스 객체 획득
         ClientService service = server.getClientService(client.getLocalAddress().toString());
 
+        // 의도적으로 메시지 하나를 5초 간격으로 나누어 전송
         service.writeMessage("1.Incomplete half message");
 
         Thread.sleep(5000);
 
         service.writeMessage(" 2.complete half message\n");
 
+        // 서버에서 메시지 수신할 수 있도록 일정 시간 대기
         Thread.sleep(3000);
 
         Assertions.assertEquals( "1.Incomplete half message 2.complete half message", client.lastStatus().copy() );
