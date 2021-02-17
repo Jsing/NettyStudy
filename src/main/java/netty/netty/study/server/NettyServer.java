@@ -84,8 +84,7 @@ public class NettyServer implements ClientActiveListener {
 
         tmp = clientAddress.toString();
         clientServiceMap.put(clientAddress.toString(), new ClientService(channel));
-        System.out.println(clientServiceMap);
-        System.out.println("[Server] Accepted client address = " + clientAddress.toString());
+        System.out.println("[Server] Activated client address = " + clientAddress.toString());
 
     }
 

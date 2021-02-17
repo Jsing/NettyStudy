@@ -1,4 +1,4 @@
-package netty.netty.study.dto;
+package netty.netty.study.data;
 
 public interface Updatable<T> {
 

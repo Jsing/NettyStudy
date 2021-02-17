@@ -3,17 +3,12 @@ package netty.netty.study.client;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.util.CharsetUtil;
-import netty.netty.study.client.handler.NettyClientBasicHandler;
-import netty.netty.study.dto.Copyable;
-import netty.netty.study.dto.LastStatus;
-import netty.netty.study.dto.Updatable;
+import lombok.extern.slf4j.Slf4j;
+import netty.netty.study.data.Copyable;
+import netty.netty.study.data.LastStatus;
+import netty.netty.study.data.Updatable;
 
 import java.net.InetSocketAddress;
 
@@ -21,6 +16,7 @@ import java.net.InetSocketAddress;
  * @TODO : Bootstrap 재연결 시에도 사용 가능한지 확인
  * @TODO : Channel 재연결 시에도 사용 가능한지 확인
  */
+@Slf4j
 public class SampleCam {
 
     private LastStatus<String> lastStatus;

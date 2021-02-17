@@ -7,9 +7,7 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import netty.netty.study.client.handler.NettyClientBasicHandler;
-import netty.netty.study.dto.Updatable;
-import netty.netty.study.server.ClientActiveListener;
-import netty.netty.study.server.handler.ClientServiceHandler;
+import netty.netty.study.data.Updatable;
 
 public class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 

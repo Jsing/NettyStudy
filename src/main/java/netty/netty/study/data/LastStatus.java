@@ -1,7 +1,5 @@
-package netty.netty.study.dto;
+package netty.netty.study.data;
 
-import lombok.Getter;
-import lombok.Setter;
 import lombok.Synchronized;
 
 public class LastStatus<T> implements Updatable<T>, Copyable<T>{
