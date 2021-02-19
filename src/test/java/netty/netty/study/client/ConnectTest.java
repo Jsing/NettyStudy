@@ -1,124 +1,136 @@
 package netty.netty.study.client;
 
-import netty.netty.study.server.NettyServer;
+import lombok.SneakyThrows;
+import netty.netty.study.configure.ServerAddress;
+import netty.netty.study.server.TcpServer;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
 
-@SpringBootTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("연결")
 public class ConnectTest {
-    final private int serverPort = 12345;
-    final private String serverIp = "127.0.0.1";
-    private NettyServer server;
-    private SampleCam client;
+
+    private TcpServer server;
 
     @BeforeEach
     void contextLoad() {
 
         try {
-            server = new NettyServer(serverPort);
+
+            server = new TcpServer(ServerAddress.getPort());
             server.start();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    @AfterEach
+    @AfterAll
     void contextEnd() {
         server.end();
     }
 
     @Test
     @DisplayName("연결 성공")
+    @SneakyThrows
     void connectionSuccess() {
 
-        client = new SampleCam();
-        client.init();
+        ClientWorker clientWorker = new ClientWorker();
+        clientWorker.init();
 
-        try {
-            Assertions.assertEquals(true, client.connect(serverIp, serverPort));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        boolean connected = clientWorker.connect(ServerAddress.getIp(), ServerAddress.getPort());
 
-        if (client != null) {
-            client.disconnect();
-        }
+        Assertions.assertEquals(true, connected);
+
+        clientWorker.disconnect();
     }
 
 
     @Test
     @DisplayName("두개의 Client 연결")
+    @SneakyThrows
     void twoClientConnection() {
 
-        SampleCam client1 = new SampleCam();
-        client1.init();
+        ClientWorker clientWorker1 = new ClientWorker();
+        ClientWorker clientWorker2 = new ClientWorker();
 
-        SampleCam client2 = new SampleCam();
-        client2.init();
+        clientWorker1.init();
+        clientWorker2.init();
 
-        try {
-            Assertions.assertEquals(true, client1.connect(serverIp, serverPort));
-            Assertions.assertEquals(true, client2.connect(serverIp, serverPort));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        boolean connected1 = clientWorker1.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean connected2 = clientWorker2.connect(ServerAddress.getIp(), ServerAddress.getPort());
 
-        client1.disconnect();
-        client2.disconnect();
+        Assertions.assertEquals(true, connected1);
+        Assertions.assertEquals(true, connected2);
 
+        clientWorker1.disconnect();
+        clientWorker2.disconnect();
     }
 
 
     @Test
     @DisplayName("원격 서버 없음")
+    @SneakyThrows
     void noServer() {
-        client = new SampleCam();
-        client.init();
 
-        try {
-            Assertions.assertEquals(false, client.connect("192.168.21.12", serverPort));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        final String noServerIp = "172.30.12.1";
 
-        client.disconnect();
+        ClientWorker clientWorker = new ClientWorker();
+        clientWorker.init();
+
+        boolean connected = clientWorker.connect(noServerIp, ServerAddress.getPort());
+
+        Assertions.assertEquals(false, connected);
+
+        clientWorker.disconnect();
     }
 
     @Test
     @DisplayName("원격 서버 포트 없음")
+    @SneakyThrows
     void noServerPort() {
-        client = new SampleCam();
-        client.init();
 
-        try {
-            Assertions.assertEquals(false, client.connect(serverIp, serverPort-1));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        final int noServerPort = ServerAddress.getPort()-1;
 
-        client.disconnect();
+        ClientWorker clientWorker = new ClientWorker();
+        clientWorker.init();
+
+        boolean connected = clientWorker.connect(ServerAddress.getIp(), noServerPort);
+
+        Assertions.assertEquals(false, connected);
+
+        clientWorker.disconnect();
     }
 
 
     @Test
-    @DisplayName("연결 실패-엉뚱한 포트")
-    void reconnect() {
+    @DisplayName("연결 후 연결 끊기")
+    @SneakyThrows
+    void disconnectInActive() {
 
-        client = new SampleCam();
-        client.init();
+        // Ready
+        ClientWorker clientWorker = new ClientWorker();
+        clientWorker.init();
 
-        try {
-            boolean connected = client.connect(serverIp, serverPort-1);
+        boolean connected = clientWorker.connect(ServerAddress.getIp(), ServerAddress.getPort());
 
-            Assertions.assertEquals(false, connected);
+        connected = clientWorker.isActive();
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Assertions.assertEquals(true, connected);
 
-        client.disconnect();
+        // Do
+        server.end();
+
+        // Then
+        Thread.sleep(1000);
+
+        connected = clientWorker.isActive();
+
+        Assertions.assertEquals(false, connected);
+
+        // End
+        clientWorker.disconnect();
     }
 
 

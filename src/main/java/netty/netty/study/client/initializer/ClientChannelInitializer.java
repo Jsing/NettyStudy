@@ -1,4 +1,4 @@
-package netty.netty.study.client;
+package netty.netty.study.client.initializer;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
@@ -6,16 +6,15 @@ import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
+import lombok.AllArgsConstructor;
 import netty.netty.study.client.handler.NettyClientBasicHandler;
 import netty.netty.study.data.Updatable;
 
+
+@AllArgsConstructor
 public class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     final private Updatable<String> updateListener;
-
-    public ClientChannelInitializer(Updatable<String> updateListener) {
-        this.updateListener = updateListener;
-    }
 
     @Override
     protected void initChannel(SocketChannel socketChannel) throws Exception {
@@ -27,7 +26,6 @@ public class ClientChannelInitializer extends ChannelInitializer<SocketChannel> 
 
                 // Down-stream
                 new StringEncoder(CharsetUtil.UTF_8));
-
 
     }
 

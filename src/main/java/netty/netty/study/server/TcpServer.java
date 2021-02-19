@@ -9,14 +9,14 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-public class NettyServer implements ClientActiveListener {
+public class TcpServer implements ClientActiveListener {
     private final int port;
     private ServerBootstrap serverBootstrap;
     private EventLoopGroup clientAcceptGroup;
     private EventLoopGroup clientServiceGroup;
     private ConcurrentHashMap<String, ClientService> clientServiceMap;
 
-    public NettyServer(int port) {
+    public TcpServer(int port) {
         this.port = port;
         clientServiceMap = new ConcurrentHashMap<>();
     }
