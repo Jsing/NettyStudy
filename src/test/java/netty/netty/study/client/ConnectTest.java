@@ -14,7 +14,7 @@ public class ConnectTest {
 
     @BeforeEach
     @SneakyThrows
-    void contextLoad() {
+    void contextUp() {
         server = new TcpServer(ServerAddress.getPort());
         server.start();
         client = new ClientWorker();
@@ -55,22 +55,22 @@ public class ConnectTest {
         Assertions.assertEquals(false, connected);
     }
 
-//    @Test
-//    @DisplayName("두개의 Client 연결")
-//    @SneakyThrows
-//    void twoClientConnection() {
-//        ClientWorker clientWorker1 = new ClientWorker();
-//        ClientWorker clientWorker2 = new ClientWorker();
-//        clientWorker1.init();
-//        clientWorker2.init();
-//        boolean connected1 = clientWorker1.connect(ServerAddress.getIp(), ServerAddress.getPort());
-//        boolean connected2 = clientWorker2.connect(ServerAddress.getIp(), ServerAddress.getPort());
-//        Assertions.assertEquals(true, connected1);
-//        Assertions.assertEquals(true, connected2);
-//        clientWorker1.disconnect();
-//        clientWorker2.disconnect();
-//    }
-//
+    //@Test
+    @DisplayName("1개 Bootstrap,EventLoop / N개의 Channel")
+    @SneakyThrows
+    void twoClientConnection() {
+        ClientWorker clientWorker1 = new ClientWorker();
+        ClientWorker clientWorker2 = new ClientWorker();
+        clientWorker1.init();
+        clientWorker2.init();
+        boolean connected1 = clientWorker1.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean connected2 = clientWorker2.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        Assertions.assertEquals(true, connected1);
+        Assertions.assertEquals(true, connected2);
+        clientWorker1.disconnect();
+        clientWorker2.disconnect();
+    }
+
 
 
 //
