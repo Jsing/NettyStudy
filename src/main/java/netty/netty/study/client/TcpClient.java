@@ -40,6 +40,12 @@ public class TcpClient {
         }
     }
 
+    /**
+     * 서버와 연결을 수행합니다. 기존 연결이 있으면 연결을 끊고 새로운 연결을 수행합니다. 
+     * @param ip 서버 IP
+     * @param port 서버 Port
+     * @return 연결 성공여부
+     */
     public boolean connect(String ip, int port) {
         this.disconnect();
 
@@ -51,7 +57,11 @@ public class TcpClient {
             channel=null;
             return false;
         }
-        assert channelFuture.isSuccess();
+
+        if (channelFuture.isSuccess() == false) {
+            channel = null;
+            return false;
+        }
 
         channel = channelFuture.channel();
         return true;
@@ -60,7 +70,7 @@ public class TcpClient {
     public void disconnect() {
         try {
             if (channel != null) {
-                channel.close().sync();
+                channel.close().syncUninterruptibly();
                 channel = null;
             }
         } catch (Exception e) {
