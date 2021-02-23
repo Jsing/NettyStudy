@@ -7,6 +7,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
@@ -14,87 +15,83 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class TcpClient {
 
-    private Bootstrap bootstrap = new Bootstrap();
+    private final Bootstrap bootstrap = new Bootstrap();
     private Channel channel;
 
-    public void init(ChannelInitializer channelInitializer) {
-
-        EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
-
-        // TODO : 연결 전 이벤트 설정이 가능한지 확인!
-//        eventLoopGroup.scheduleAtFixedRate()
-
-        bootstrap.group(eventLoopGroup)
+    public void init(ChannelInitializer<?> channelInitializer) {
+        /**
+         * TODO LastStatus 갱신을 어떻게 처리할지 고민해야 함
+         */
+        bootstrap.group(new NioEventLoopGroup())
                 .channel(NioSocketChannel.class)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
                 .handler(channelInitializer);
     }
 
-    /**
-     * @throws InterruptedException
-     */
-    public void end() throws InterruptedException {
-
-        if (channel.eventLoop() != null) {
-            channel.eventLoop().shutdownGracefully().sync();
+    public void destroy() {
+        try {
+            if (channel != null && channel.eventLoop() != null) {
+                channel.eventLoop().shutdownGracefully().sync();
+            }
+        } catch (Exception e) {
+            // TODO :: 예외처리
+            e.printStackTrace();
         }
     }
 
-    public boolean connect(String ip, int port) throws Exception {
-
+    public boolean connect(String ip, int port) {
         this.disconnect();
 
-        ChannelFuture channelFuture = bootstrap.connect(ip, port).syncUninterruptibly();
-
-        if (channelFuture.isSuccess() == false) {
-            channel = null;
+        ChannelFuture channelFuture=null;
+        try {
+            channelFuture = bootstrap.connect(ip, port).syncUninterruptibly();
+        } catch (Exception e) {
+            e.printStackTrace();
+            channel=null;
             return false;
         }
+        assert channelFuture.isSuccess();
 
         channel = channelFuture.channel();
-        return false;
+        return true;
     }
 
-    /**
-     * @throws InterruptedException
-     */
-    public void disconnect() throws InterruptedException {
-
-        if (channel != null) {
-            channel.close().sync();
+    public void disconnect() {
+        try {
+            if (channel != null) {
+                channel.close().sync();
+                channel = null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    public boolean isActive() {
-
-        return channel.isActive();
-    }
-
-    public ChannelFuture send(Object message) {
-
+    public ChannelFuture sendSync(Object message) {
+        ChannelFuture channelFuture = channel.writeAndFlush(message);
+        try {
+            channelFuture.await();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return channel.writeAndFlush(message);
     }
 
-    /**
-     * @param command
-     * @param initialDelay
-     * @param period
-     * @param unit
-     * @return
-     */
-    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
+    public ChannelFuture send(Object message) {
+        return channel.writeAndFlush(message);
+    }
 
+    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
         return channel.eventLoop().scheduleAtFixedRate(command, initialDelay, period, unit);
     }
 
-    /**
-     * @param task
-     * @return
-     */
     public Future<?> submit(Runnable task) {
-
         return channel.eventLoop().submit(task);
+    }
+
+    public boolean isActive() {
+        return channel.isActive();
     }
 
     public InetSocketAddress getLocalAddress() {

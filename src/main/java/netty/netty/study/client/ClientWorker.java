@@ -18,12 +18,7 @@ public class ClientWorker {
     }
 
     public void end() {
-
-        try {
-            tcpClient.end();
-        } catch (InterruptedException e) {
-            log.debug(e.toString());
-        }
+        tcpClient.destroy();
     }
 
     public LastStatus<String> lastStatus() {

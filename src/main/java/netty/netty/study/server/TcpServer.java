@@ -1,7 +1,10 @@
 package netty.netty.study.server;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
@@ -15,6 +18,7 @@ public class TcpServer implements ClientActiveListener {
     private EventLoopGroup clientAcceptGroup;
     private EventLoopGroup clientServiceGroup;
     private ConcurrentHashMap<String, ClientService> clientServiceMap;
+    private String tmp;
 
     public TcpServer(int port) {
         this.port = port;
@@ -37,9 +41,8 @@ public class TcpServer implements ClientActiveListener {
 
             ChannelFuture future = serverBootstrap.bind().sync();
 
-            if (future.isSuccess()) {
+            if (!future.isSuccess()) {
 
-            } else {
                 clientAcceptGroup.shutdownGracefully().sync();
                 clientServiceGroup.shutdownGracefully().sync();
             }
@@ -76,8 +79,6 @@ public class TcpServer implements ClientActiveListener {
 
         return clientServiceMap.get(address);
     }
-
-    private String tmp;
 
     @Override
     public void clientActivated(Channel channel, InetSocketAddress clientAddress) {
