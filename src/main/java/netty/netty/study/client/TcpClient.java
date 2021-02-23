@@ -62,7 +62,7 @@ public class TcpClient {
     public void disconnect() {
         try {
             if (channel != null) {
-                channel.close().sync();
+                channel.close().syncUninterruptibly();
                 channel = null;
             }
         } catch (Exception e) {
