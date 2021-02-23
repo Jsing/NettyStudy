@@ -43,15 +43,17 @@ public class TcpClient {
     public boolean connect(String ip, int port) {
         this.disconnect();
 
-        ChannelFuture channelFuture=null;
+        ChannelFuture channelFuture = null;
         try {
             channelFuture = bootstrap.connect(ip, port).syncUninterruptibly();
         } catch (Exception e) {
             e.printStackTrace();
-            channel=null;
             return false;
         }
-        assert channelFuture.isSuccess();
+
+        if (channelFuture.isSuccess() == false) {
+            return false;
+        }
 
         channel = channelFuture.channel();
         return true;
