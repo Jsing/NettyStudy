@@ -55,7 +55,15 @@ public class ConnectTest {
         Assertions.assertEquals(false, connected);
     }
 
+    // TODO : Today 테스트 필요
+    @DisplayName("Reconnect->Transfer")
+    @SneakyThrows
+    void reconnectAndTransfer() {
+
+    }
+
     //@Test
+    // TODO : Today 테스트 필요
     @DisplayName("1개 Bootstrap,EventLoop / N개의 Channel")
     @SneakyThrows
     void twoClientConnection() {
