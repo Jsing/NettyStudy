@@ -59,7 +59,7 @@ public class ConnectTest {
     @DisplayName("Reconnect->Transfer")
     @SneakyThrows
     void reconnectAndTransfer() {
-
+        // TODO : @Sharable 어노테이션 영향 확인
     }
 
     //@Test
@@ -67,16 +67,7 @@ public class ConnectTest {
     @DisplayName("1개 Bootstrap,EventLoop / N개의 Channel")
     @SneakyThrows
     void twoClientConnection() {
-        ClientWorker clientWorker1 = new ClientWorker();
-        ClientWorker clientWorker2 = new ClientWorker();
-        clientWorker1.init();
-        clientWorker2.init();
-        boolean connected1 = clientWorker1.connect(ServerAddress.getIp(), ServerAddress.getPort());
-        boolean connected2 = clientWorker2.connect(ServerAddress.getIp(), ServerAddress.getPort());
-        Assertions.assertEquals(true, connected1);
-        Assertions.assertEquals(true, connected2);
-        clientWorker1.disconnect();
-        clientWorker2.disconnect();
+
     }
 
 
