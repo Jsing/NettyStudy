@@ -32,7 +32,7 @@ public class ServerServiceHandler extends SimpleChannelInboundHandler {
     protected void channelRead0(ChannelHandlerContext ctx, Object in) throws Exception {
         String msg = (String) in;
         updateListener.set(msg);
-        //System.out.println("[Server] msg received : \"" + msg + "\"");
+        System.out.println("[Server] msg received : " + msg);
     }
 
     @Override

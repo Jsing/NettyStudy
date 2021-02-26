@@ -83,7 +83,6 @@ public class ConnectTest {
     void serverToClientTransfer() {
         boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
         Assertions.assertEquals(true, connected);
-
     }
 
     //@Test

@@ -15,7 +15,7 @@ public class ClientService {
 
     public void init() {
 
-        tcpClient.init(new ClientChannelInitializer(lastStatus));
+        tcpClient.init(new ClientChannelInitializer(lastStatus, (InactiveListener)tcpClient));
     }
 
     public void end() {
@@ -25,6 +25,10 @@ public class ClientService {
     public LastStatus lastStatus() {
 
         return lastStatus;
+    }
+
+    public void connectUntilSuccess(String ip, int port) throws Exception {
+        tcpClient.connectUntilSuccess(ip, port);
     }
 
     public boolean connect(String ip, int port) throws Exception {

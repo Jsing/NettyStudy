@@ -4,6 +4,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
+import netty.netty.study.client.InactiveListener;
 import netty.netty.study.data.LastStatus;
 import netty.netty.study.data.Updatable;
 
@@ -11,9 +12,11 @@ import netty.netty.study.data.Updatable;
 public class ClientWorkerHandler extends SimpleChannelInboundHandler<String> {
 
     final private LastStatus updateListener;
+    final private InactiveListener inactiveListener;
 
-    public ClientWorkerHandler(LastStatus updateListener) {
+    public ClientWorkerHandler(LastStatus updateListener, InactiveListener inactiveListener) {
         this.updateListener = updateListener;
+        this.inactiveListener = inactiveListener;
     }
 
     @Override
@@ -24,12 +27,9 @@ public class ClientWorkerHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("[Client] channelInactive");
+        inactiveListener.channelInactiveOccurred();
         super.channelInactive(ctx);
-    }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        super.userEventTriggered(ctx, evt);
     }
 
     @Override
@@ -41,5 +41,6 @@ public class ClientWorkerHandler extends SimpleChannelInboundHandler<String> {
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, String msg) throws Exception {
         updateListener.set(msg);
+        System.out.println("[Client] msg received : " + msg);
     }
 }

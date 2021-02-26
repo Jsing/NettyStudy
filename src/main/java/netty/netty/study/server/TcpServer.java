@@ -59,7 +59,7 @@ public class TcpServer implements ClientActiveListener {
     public void end() {
         try {
             for (ServerService serverService : clientServiceMap.values()) {
-                serverService.end();
+                serverService.disconnect();
             }
             clientAcceptGroup.shutdownGracefully().sync();
             clientServiceGroup.shutdownGracefully().sync();

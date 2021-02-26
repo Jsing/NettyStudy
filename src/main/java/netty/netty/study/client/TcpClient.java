@@ -13,16 +13,20 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class TcpClient {
+public class TcpClient implements InactiveListener {
+
 
     private final Bootstrap bootstrap = new Bootstrap();
     private Channel channel;
+    private String serverIp;
+    private int serverPort;
+    private Future<?> connectUntilSuccessFuture;
 
     public void init(ChannelInitializer<?> channelInitializer) {
-        /**
-         * TODO LastStatus 갱신을 어떻게 처리할지 고민해야 함
-         */
-        bootstrap.group(new NioEventLoopGroup())
+
+        EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
+
+        bootstrap.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
@@ -40,12 +44,47 @@ public class TcpClient {
         }
     }
 
+    /**
+     * EventLoopGroup 쓰레드를 통해 비동기적으로 연결에 성공 할 때 까지 연결 시도를 수행합니다.
+     * EventLoopGroup 쓰레드가 여러 채널에 의해 공유되고 있는 경우 사용해서는 안됩니다.
+     *
+     * @param ip
+     * @param port
+     */
+    // TODO 테스트 및 리팩토링, 안정화가 필요합니다.
+    public void connectUntilSuccess(String ip, int port) {
+        this.serverIp = ip;
+        this.serverPort = port;
+
+        // TODO 반드시 동시에 여러번 호출되지 않음을 확인하는 Assert 문이라든지 방어 코드가 들어가야할 것으로 보임
+
+        connectUntilSuccessFuture = bootstrap.config().group().submit(() -> {
+            boolean connected = false;
+            do {
+                connected = connect();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } while (!connected);
+        });
+
+    }
+
     public boolean connect(String ip, int port) {
+        this.serverIp = ip;
+        this.serverPort = port;
+
+        return connect();
+    }
+
+    private boolean connect() {
         this.disconnect();
 
         ChannelFuture channelFuture = null;
         try {
-            channelFuture = bootstrap.connect(ip, port).syncUninterruptibly();
+            channelFuture = bootstrap.connect(this.serverIp, this.serverPort).syncUninterruptibly();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -61,6 +100,12 @@ public class TcpClient {
 
     public void disconnect() {
         try {
+            // TODO 테스트 및 리팩토링, 안정화가 필요합니다.
+            if (connectUntilSuccessFuture!=null && !connectUntilSuccessFuture.isDone()) {
+                connectUntilSuccessFuture.cancel(true);
+            }
+            // TODO ----
+
             if (channel != null) {
                 channel.close().syncUninterruptibly();
                 channel = null;
@@ -93,11 +138,22 @@ public class TcpClient {
     }
 
     public boolean isActive() {
+        if (channel == null) {
+            return false;
+        }
         return channel.isActive();
     }
 
+    @Nullable
     public InetSocketAddress getLocalAddress() {
+        if (channel == null) {
+            return null;
+        }
         return (InetSocketAddress) channel.localAddress();
     }
 
+    @Override
+    public void channelInactiveOccurred() {
+        connectUntilSuccess(serverIp, serverPort);
+    }
 }

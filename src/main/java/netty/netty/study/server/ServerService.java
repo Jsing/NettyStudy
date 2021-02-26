@@ -36,7 +36,7 @@ public class ServerService {
 
     }
 
-    public void end() throws InterruptedException {
+    public void disconnect() throws InterruptedException {
 
         channel.close().sync();
     }
