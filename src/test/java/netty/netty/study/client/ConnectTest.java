@@ -2,6 +2,8 @@ package netty.netty.study.client;
 
 import lombok.SneakyThrows;
 import netty.netty.study.configure.ServerAddress;
+import netty.netty.study.data.Updatable;
+import netty.netty.study.server.ServerService;
 import netty.netty.study.server.TcpServer;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,14 +12,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 @DisplayName("연결")
 public class ConnectTest {
     private TcpServer server;
-    private ClientWorker client;
+    private ClientService client;
 
     @BeforeEach
     @SneakyThrows
     void contextUp() {
         server = new TcpServer(ServerAddress.getPort());
         server.start();
-        client = new ClientWorker();
+        client = new ClientService();
         client.init();
     }
 
@@ -55,11 +57,33 @@ public class ConnectTest {
         Assertions.assertEquals(false, connected);
     }
 
-    // TODO : Today 테스트 필요
-    @DisplayName("Reconnect->Transfer")
+    @Test
+    @DisplayName("Client->Server")
     @SneakyThrows
-    void reconnectAndTransfer() {
-        // TODO : @Sharable 어노테이션 영향 확인
+    void clientToServerTransfer() {
+        String testMessage = "I am Jsing";
+
+        boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        Assertions.assertEquals(true, connected);
+
+        Thread.sleep(100);
+
+        client.send(testMessage);
+
+        Thread.sleep(100);
+
+        ServerService serverService = server.getServerService(client.getLocalAddress().toString());
+        String msgReceived = serverService.lastStatus().get();
+
+        Assertions.assertEquals(testMessage, msgReceived);
+    }
+
+    @DisplayName("Server->Client")
+    @SneakyThrows
+    void serverToClientTransfer() {
+        boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        Assertions.assertEquals(true, connected);
+
     }
 
     //@Test

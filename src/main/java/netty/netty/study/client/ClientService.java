@@ -3,13 +3,14 @@ package netty.netty.study.client;
 import lombok.extern.slf4j.Slf4j;
 import netty.netty.study.client.initializer.ClientChannelInitializer;
 import netty.netty.study.data.LastStatus;
+import netty.netty.study.data.Updatable;
 
 import java.net.InetSocketAddress;
 
 @Slf4j
-public class ClientWorker {
+public class ClientService {
 
-    private final LastStatus<String> lastStatus = new LastStatus<>();
+    private final LastStatus lastStatus = new LastStatus();
     private final TcpClient tcpClient = new TcpClient();
 
     public void init() {
@@ -21,7 +22,7 @@ public class ClientWorker {
         tcpClient.destroy();
     }
 
-    public LastStatus<String> lastStatus() {
+    public LastStatus lastStatus() {
 
         return lastStatus;
     }
@@ -34,6 +35,10 @@ public class ClientWorker {
     public void disconnect() throws InterruptedException {
 
         tcpClient.disconnect();
+    }
+
+    public void send(Object msg) {
+        tcpClient.send(msg);
     }
 
     public boolean isActive() {

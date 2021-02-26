@@ -1,18 +1,14 @@
 package netty.netty.study.data;
 
-import lombok.Synchronized;
+public class LastStatus {
 
-public class LastStatus<T> implements Updatable<T>, Copyable<T>{
+    private String status = new String();
 
-    private T value;
-
-    @Synchronized
-    public void update(T value) {
-        this.value = value;
+    synchronized public void set(String status) {
+        this.status = new String(status);
     }
 
-    @Synchronized
-    public T copy() {
-        return value;
+    synchronized public String get() {
+        return new String(this.status);
     }
 }

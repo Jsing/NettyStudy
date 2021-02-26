@@ -7,14 +7,15 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;
-import netty.netty.study.client.handler.NettyClientBasicHandler;
+import netty.netty.study.client.handler.ClientWorkerHandler;
+import netty.netty.study.data.LastStatus;
 import netty.netty.study.data.Updatable;
 
 
 @AllArgsConstructor
 public class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-    final private Updatable<String> updateListener;
+    final private LastStatus updateListener;
 
     @Override
     protected void initChannel(SocketChannel socketChannel) throws Exception {
@@ -22,7 +23,7 @@ public class ClientChannelInitializer extends ChannelInitializer<SocketChannel> 
                 // Up-stream
                 new LineBasedFrameDecoder(1500, true, true),
                 new StringDecoder(CharsetUtil.UTF_8),
-                new NettyClientBasicHandler(this.updateListener),
+                new ClientWorkerHandler(this.updateListener),
 
                 // Down-stream
                 new StringEncoder(CharsetUtil.UTF_8));

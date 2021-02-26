@@ -2,5 +2,5 @@ package netty.netty.study.data;
 
 public interface Updatable<T> {
 
-    void update(T status);
+    void update(T newStatus);
 }

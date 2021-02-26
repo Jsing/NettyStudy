@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 class MsgTransferTest {
 
     private TcpServer server;
-    private ClientWorker clientServcie;
+    private ClientService clientServcie;
 
     @BeforeAll
     @Test
@@ -21,7 +21,7 @@ class MsgTransferTest {
         server.start();
 
         // 클라이언트 생성
-        clientServcie = new ClientWorker();
+        clientServcie = new ClientService();
         clientServcie.init();
 
         // 연결

@@ -4,14 +4,15 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
+import netty.netty.study.data.LastStatus;
 import netty.netty.study.data.Updatable;
 
 
-public class NettyClientBasicHandler extends SimpleChannelInboundHandler<String> {
+public class ClientWorkerHandler extends SimpleChannelInboundHandler<String> {
 
-    final private Updatable updateListener;
+    final private LastStatus updateListener;
 
-    public NettyClientBasicHandler(Updatable updateListener) {
+    public ClientWorkerHandler(LastStatus updateListener) {
         this.updateListener = updateListener;
     }
 
@@ -39,6 +40,6 @@ public class NettyClientBasicHandler extends SimpleChannelInboundHandler<String>
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, String msg) throws Exception {
-        updateListener.update(msg);
+        updateListener.set(msg);
     }
 }

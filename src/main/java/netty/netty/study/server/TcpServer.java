@@ -17,7 +17,7 @@ public class TcpServer implements ClientActiveListener {
     private ServerBootstrap serverBootstrap;
     private EventLoopGroup clientAcceptGroup;
     private EventLoopGroup clientServiceGroup;
-    private ConcurrentHashMap<String, ClientService> clientServiceMap;
+    private ConcurrentHashMap<String, ServerService> clientServiceMap;
     private String tmp;
 
     public TcpServer(int port) {
@@ -37,7 +37,7 @@ public class TcpServer implements ClientActiveListener {
                     .localAddress(new InetSocketAddress(port))
                     .option(ChannelOption.SO_REUSEADDR, true)
                     .childOption(ChannelOption.TCP_NODELAY, true)
-                    .childHandler(new ServerServiceChannelInitializer(this));
+                    .childHandler(new ServerServiceChannelInitializer((ClientActiveListener) this));
 
             ChannelFuture future = serverBootstrap.bind().sync();
 
@@ -57,36 +57,27 @@ public class TcpServer implements ClientActiveListener {
     }
 
     public void end() {
-
         try {
-
-            for (ClientService clientService : clientServiceMap.values()) {
-                clientService.end();
+            for (ServerService serverService : clientServiceMap.values()) {
+                serverService.end();
             }
-
             clientAcceptGroup.shutdownGracefully().sync();
             clientServiceGroup.shutdownGracefully().sync();
-
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
     }
 
-    public ClientService getClientService(String address) {
-
+    public ServerService getServerService(String address) {
         assert tmp.equals(address) : "tmp is not the same with address";
-
         return clientServiceMap.get(address);
     }
 
     @Override
     public void clientActivated(Channel channel, InetSocketAddress clientAddress) {
-
         tmp = clientAddress.toString();
-        clientServiceMap.put(clientAddress.toString(), new ClientService(channel));
+        clientServiceMap.put(clientAddress.toString(), new ServerService(channel));
         System.out.println("[Server] Activated client address = " + clientAddress.toString());
-
     }
 
     public void waitForClient(InetSocketAddress clientAddress) throws InterruptedException {

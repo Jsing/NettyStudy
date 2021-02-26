@@ -1,20 +1,27 @@
 package netty.netty.study.server;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import netty.netty.study.data.LastStatus;
+import netty.netty.study.data.Updatable;
+import netty.netty.study.server.handler.ServerServiceHandler;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class ClientService {
+public class ServerService {
+    private final Channel channel;
+    private LastStatus lastStatus = new LastStatus();
 
-    final private Channel channel;
-
-    public ClientService(Channel channel) {
+    public ServerService(Channel channel) {
 
         assert channel.isActive() == true : "channel is not active";
 
+        channel.pipeline().get(ServerServiceHandler.class).setUpdateListener(lastStatus);
         this.channel = channel;
+    }
+
+    public LastStatus lastStatus() {
+        return this.lastStatus;
     }
 
     public void init(int initialDelay, int period, TimeUnit unit) {
@@ -34,7 +41,7 @@ public class ClientService {
         channel.close().sync();
     }
 
-    public void writeMessage(String msg) {
+    public void send(Object msg) {
 
         channel.writeAndFlush(msg);
     }
