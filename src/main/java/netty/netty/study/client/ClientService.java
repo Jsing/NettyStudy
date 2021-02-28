@@ -3,7 +3,6 @@ package netty.netty.study.client;
 import lombok.extern.slf4j.Slf4j;
 import netty.netty.study.client.initializer.ClientChannelInitializer;
 import netty.netty.study.data.LastStatus;
-import netty.netty.study.data.Updatable;
 
 import java.net.InetSocketAddress;
 
@@ -33,7 +32,7 @@ public class ClientService {
 
     public boolean connect(String ip, int port) throws Exception {
 
-         return tcpClient.connect(ip, port);
+         return tcpClient.connectOnce(ip, port);
     }
 
     public void disconnect() throws InterruptedException {

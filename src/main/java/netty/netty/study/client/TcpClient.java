@@ -23,7 +23,6 @@ public class TcpClient implements InactiveListener {
     private Future<?> connectUntilSuccessFuture;
 
     public void init(ChannelInitializer<?> channelInitializer) {
-
         EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
 
         bootstrap.group(eventLoopGroup)
@@ -61,7 +60,7 @@ public class TcpClient implements InactiveListener {
         connectUntilSuccessFuture = bootstrap.config().group().submit(() -> {
             boolean connected = false;
             do {
-                connected = connect();
+                connected = connectOnce();
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -72,14 +71,14 @@ public class TcpClient implements InactiveListener {
 
     }
 
-    public boolean connect(String ip, int port) {
+    public boolean connectOnce(String ip, int port) {
         this.serverIp = ip;
         this.serverPort = port;
 
-        return connect();
+        return connectOnce();
     }
 
-    private boolean connect() {
+    private boolean connectOnce() {
         this.disconnect();
 
         ChannelFuture channelFuture = null;
