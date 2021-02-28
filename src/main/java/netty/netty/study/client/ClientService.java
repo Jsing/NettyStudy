@@ -26,11 +26,11 @@ public class ClientService {
         return lastStatus;
     }
 
-    public void connectUntilSuccess(String ip, int port) throws Exception {
-        tcpClient.connectUntilSuccess(ip, port);
+    public void startConnectUntilSuccess(String ip, int port) throws Exception {
+        tcpClient.startConnectUntilSuccess(ip, port);
     }
 
-    public boolean connect(String ip, int port) throws Exception {
+    public boolean connectOnce(String ip, int port) throws Exception {
 
          return tcpClient.connectOnce(ip, port);
     }

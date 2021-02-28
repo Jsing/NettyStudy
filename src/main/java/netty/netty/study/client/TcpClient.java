@@ -14,8 +14,6 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class TcpClient implements InactiveListener {
-
-
     private final Bootstrap bootstrap = new Bootstrap();
     private Channel channel;
     private String serverIp;
@@ -51,7 +49,7 @@ public class TcpClient implements InactiveListener {
      * @param port
      */
     // TODO 테스트 및 리팩토링, 안정화가 필요합니다.
-    public void connectUntilSuccess(String ip, int port) {
+    public void startConnectUntilSuccess(String ip, int port) {
         this.serverIp = ip;
         this.serverPort = port;
 
@@ -153,6 +151,6 @@ public class TcpClient implements InactiveListener {
 
     @Override
     public void channelInactiveOccurred() {
-        connectUntilSuccess(serverIp, serverPort);
+        startConnectUntilSuccess(serverIp, serverPort);
     }
 }

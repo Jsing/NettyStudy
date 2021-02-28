@@ -8,36 +8,23 @@ import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class ExceptionalConnectTest {
-    private TcpServer server;
-    private ClientService client;
-
-    @BeforeEach
-    @SneakyThrows
-    void contextUp() {
-
-    }
-
-    @AfterEach
-    @SneakyThrows
-    void contextDown() {
-
-    }
 
     @Test
     @DisplayName("N Reconnect->Transfer")
     @SneakyThrows
     void reconnectAndTransfer() {
-        final int nRepeat = 100000;
+        final int nRepeat = 100;
         final String testBaseMessage = "Hello I am Jsing";
 
-        server = new TcpServer(ServerAddress.getPort());
+        TcpServer server = new TcpServer(ServerAddress.getPort());
         server.start();
-        client = new ClientService();
+        ClientService client = new ClientService();
         client.init();
 
         for (int i = 0; i < nRepeat; i++) {
-            boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+            boolean connected = client.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
             Assertions.assertEquals(true, connected);
 
             String testMessage = testBaseMessage + String.valueOf(i);
@@ -59,51 +46,80 @@ public class ExceptionalConnectTest {
         server.end();
     }
 
-
     @Test
-    @DisplayName("클라이언트 연결 시도 중 서버 시작")
+    @DisplayName("연결 성공할 때 까지 시도")
     @SneakyThrows
-    void serverStartAfterConnect() {
-        client = new ClientService();
+    void clientConnectUntilSuccess() {
+        TcpServer server = new TcpServer(ServerAddress.getPort());
+        ClientService client = new ClientService();
+
         client.init();
 
-        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+        client.startConnectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
 
         Thread.sleep(10000);
 
-        Assertions.assertEquals(false, client.isActive());
+        Assertions.assertFalse(client.isActive());
 
-        server = new TcpServer(ServerAddress.getPort());
         server.start();
-
-        Thread.sleep(500);
-
-        ServerService serverService = server.getServerService(client.getLocalAddress().toString());
-
-        Assertions.assertEquals(true, serverService!=null);
-        Assertions.assertEquals(true, client.isActive());
-
-        serverService.send("Hello Netty");
 
         Thread.sleep(1000);
 
-        Assertions.assertEquals("Hello Netty", client.lastStatus().get());
-
-        serverService.disconnect();
+        Assertions.assertTrue(client.isActive());
 
         server.end();
+        client.disconnect();
+    }
 
-        Thread.sleep(1000);
-
-        Assertions.assertEquals(false, client.isActive());
-
+    @Test
+    @DisplayName("연결 복구")
+    @SneakyThrows
+    void connectionRecovery() {
+        TcpServer server = new TcpServer(ServerAddress.getPort());
         server.start();
 
-        Thread.sleep(2000);
+        ClientService client = new ClientService();
+        client.init();
+        client.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
 
-        Assertions.assertEquals(true, client.isActive());
+        Thread.sleep(1000);
+        Assertions.assertTrue(client.isActive());
 
+        transfer(server, client);
+        Thread.sleep(1000);
 
+        server.end();
+        Thread.sleep(1000);
+        Assertions.assertFalse(client.isActive());
+
+        server.start();
+        Thread.sleep(5000);
+        Assertions.assertTrue(client.isActive());
+
+        transfer(server, client);
+        Thread.sleep(1000);
+
+//        server.end();
+        client.disconnect();
+        server.end();
+    }
+
+    @SneakyThrows
+    void transfer(TcpServer server, ClientService client) {
+        final String testBaseMessage = "Hello I am Jsing";
+
+        String testMessage = testBaseMessage;
+
+        Thread.sleep(30);
+
+        client.send(testMessage);
+
+        Thread.sleep(30);
+
+        ServerService serverService = server.getServerService(client.getLocalAddress().toString());
+        String msgReceived = serverService.lastStatus().get();
+
+        Assertions.assertEquals(testMessage, msgReceived);
     }
 
 

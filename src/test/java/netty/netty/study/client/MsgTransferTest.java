@@ -25,7 +25,7 @@ class MsgTransferTest {
         clientServcie.init();
 
         // 연결
-        boolean isConnected = clientServcie.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean isConnected = clientServcie.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
         Assertions.assertEquals( true, isConnected );
 
     }

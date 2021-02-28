@@ -2,7 +2,6 @@ package netty.netty.study.client;
 
 import lombok.SneakyThrows;
 import netty.netty.study.configure.ServerAddress;
-import netty.netty.study.data.Updatable;
 import netty.netty.study.server.ServerService;
 import netty.netty.study.server.TcpServer;
 import org.junit.jupiter.api.*;
@@ -10,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 @DisplayName("연결")
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class ConnectTest {
     private TcpServer server;
     private ClientService client;
@@ -34,7 +34,7 @@ public class ConnectTest {
     @DisplayName("연결 성공")
     @SneakyThrows
     void connectionSuccess() throws Exception {
-        boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean connected = client.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
         Assertions.assertEquals(true, connected);
     }
 
@@ -43,7 +43,7 @@ public class ConnectTest {
     @SneakyThrows
     void noServer() {
         String noServerIp = "172.30.12.1";
-        boolean connected = client.connect(noServerIp, ServerAddress.getPort());
+        boolean connected = client.connectOnce(noServerIp, ServerAddress.getPort());
         Assertions.assertEquals(false, connected);
     }
 
@@ -53,7 +53,7 @@ public class ConnectTest {
     void noServerPort() {
         final int noServerPort = ServerAddress.getPort()-1;
 
-        boolean connected = client.connect(ServerAddress.getIp(), noServerPort);
+        boolean connected = client.connectOnce(ServerAddress.getIp(), noServerPort);
         Assertions.assertEquals(false, connected);
     }
 
@@ -63,7 +63,7 @@ public class ConnectTest {
     void clientToServerTransfer() {
         String testMessage = "I am Jsing";
 
-        boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean connected = client.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
         Assertions.assertEquals(true, connected);
 
         Thread.sleep(100);
@@ -81,7 +81,7 @@ public class ConnectTest {
     @DisplayName("Server->Client")
     @SneakyThrows
     void serverToClientTransfer() {
-        boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean connected = client.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
         Assertions.assertEquals(true, connected);
     }
 
