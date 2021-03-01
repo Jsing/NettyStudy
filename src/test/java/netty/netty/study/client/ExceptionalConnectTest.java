@@ -75,54 +75,52 @@ public class ExceptionalConnectTest {
     @DisplayName("연결 복구")
     @SneakyThrows
     void connectionRecovery() {
-        int i = 0;
-
         TcpServer server = new TcpServer(ServerAddress.getPort());
         ClientService client = new ClientService();
 
-        System.out.println(i++ + "[Server] start");
+        System.out.println("[Server] start");
         server.start();
 
-        System.out.println(i++ + "[Client] connect");
+        System.out.println("[Client] connect");
         client.init();
         client.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
 
-        System.out.println(i++ + "[Client] sleep during 10sec");
+        System.out.println("[Client] sleep during 1sec");
         Thread.sleep(1000);
 
-        System.out.println(i++ + "[Client] " + client.isActive());
+        System.out.println("[Client] client.isActive() = " + client.isActive());
         Assertions.assertTrue(client.isActive());
 
-        System.out.println(i++ + "[Client] data transfer");
+        System.out.println("[Client] data transfer");
         transfer(server, client);
         Thread.sleep(1000);
 
-        System.out.println(i++ + "[Server] shutdown");
+        System.out.println("[Server] shutdown");
         server.shutdown();
 
-        System.out.println(i++ + "[Client] sleep during 1sec");
+        System.out.println("[Client] sleep during 1sec");
         Thread.sleep(1000);
 
-        System.out.println(i++ + "[Client] " + client.isActive());
+        System.out.println("[Client] client.isActive() = " + client.isActive());
         Assertions.assertFalse(client.isActive());
 
-        System.out.println(i++ + "[Server] restart");
+        System.out.println("[Server] restart");
         server.start();
 
-        System.out.println(i++ + "[Client] sleep during 5sec");
+        System.out.println("[Client] sleep during 5sec");
         Thread.sleep(5000);
 
-        System.out.println(i++ + "[Client] " + client.isActive());
+        System.out.println("[Client] client.isActive() = " + client.isActive());
         Assertions.assertTrue(client.isActive());
 
-        System.out.println(i++ + "[Client] data transfer");
+        System.out.println("[Client] data transfer");
         transfer(server, client);
         Thread.sleep(1000);
 
-        System.out.println(i++ + "[Server] shutdown");
+        System.out.println("[Server] shutdown");
         server.shutdown();
 
-        System.out.println(i++ + "[Client] disconnect");
+        System.out.println("[Client] disconnect");
         client.disconnect();
     }
 
