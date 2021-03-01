@@ -43,7 +43,7 @@ public class ExceptionalConnectTest {
             client.disconnect();
         }
 
-        server.end();
+        server.shutdown();
     }
 
     @Test
@@ -67,7 +67,7 @@ public class ExceptionalConnectTest {
 
         Assertions.assertTrue(client.isActive());
 
-        server.end();
+        server.shutdown();
         client.disconnect();
     }
 
@@ -75,33 +75,55 @@ public class ExceptionalConnectTest {
     @DisplayName("연결 복구")
     @SneakyThrows
     void connectionRecovery() {
+        int i = 0;
+
         TcpServer server = new TcpServer(ServerAddress.getPort());
+        ClientService client = new ClientService();
+
+        System.out.println(i++ + "[Server] start");
         server.start();
 
-        ClientService client = new ClientService();
+        System.out.println(i++ + "[Client] connect");
         client.init();
         client.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
 
+        System.out.println(i++ + "[Client] sleep during 10sec");
         Thread.sleep(1000);
+
+        System.out.println(i++ + "[Client] " + client.isActive());
         Assertions.assertTrue(client.isActive());
 
+        System.out.println(i++ + "[Client] data transfer");
         transfer(server, client);
         Thread.sleep(1000);
 
-        server.end();
+        System.out.println(i++ + "[Server] shutdown");
+        server.shutdown();
+
+        System.out.println(i++ + "[Client] sleep during 1sec");
         Thread.sleep(1000);
+
+        System.out.println(i++ + "[Client] " + client.isActive());
         Assertions.assertFalse(client.isActive());
 
+        System.out.println(i++ + "[Server] restart");
         server.start();
+
+        System.out.println(i++ + "[Client] sleep during 5sec");
         Thread.sleep(5000);
+
+        System.out.println(i++ + "[Client] " + client.isActive());
         Assertions.assertTrue(client.isActive());
 
+        System.out.println(i++ + "[Client] data transfer");
         transfer(server, client);
         Thread.sleep(1000);
 
-//        server.end();
+        System.out.println(i++ + "[Server] shutdown");
+        server.shutdown();
+
+        System.out.println(i++ + "[Client] disconnect");
         client.disconnect();
-        server.end();
     }
 
     @SneakyThrows

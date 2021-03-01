@@ -27,7 +27,7 @@ public class FrameDecoderTest {
 
     @AfterEach
     void contextEnd() {
-        server.end();
+        server.shutdown();
     }
 
     @Test

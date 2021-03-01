@@ -27,7 +27,7 @@ public class ConnectTest {
     @SneakyThrows
     void contextDown() {
         client.disconnect();
-        server.end();
+        server.shutdown();
     }
 
     @Test

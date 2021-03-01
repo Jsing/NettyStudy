@@ -37,7 +37,7 @@ class MsgTransferTest {
         clientServcie.end();
 
         // 서버 종료
-        server.end();
+        server.shutdown();
 
     }
 
