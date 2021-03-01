@@ -57,7 +57,7 @@ public class TcpServer implements ClientActiveListener {
         }
     }
 
-    public void end() {
+    public void shutdown() {
         try {
             for (Map.Entry<String, ServerService> entry : serverServiceMap.entrySet()) {
                 entry.getValue().disconnect();

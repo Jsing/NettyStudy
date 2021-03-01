@@ -37,12 +37,12 @@ public class ServerService {
     }
 
     public void disconnect() throws InterruptedException {
-
-        channel.close().sync();
+        if (channel!= null) {
+            channel.close().sync();
+        }
     }
 
     public void send(Object msg) {
-
         channel.writeAndFlush(msg);
     }
 
