@@ -9,6 +9,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -17,12 +18,12 @@ public class TcpServer implements ClientActiveListener {
     private ServerBootstrap serverBootstrap;
     private EventLoopGroup clientAcceptGroup;
     private EventLoopGroup clientServiceGroup;
-    private ConcurrentHashMap<String, ServerService> clientServiceMap;
+    private ConcurrentHashMap<String, ServerService> serverServiceMap;
     private String tmp;
 
     public TcpServer(int port) {
         this.port = port;
-        clientServiceMap = new ConcurrentHashMap<>();
+        serverServiceMap = new ConcurrentHashMap<>();
     }
 
     public void start() throws Exception {
@@ -58,8 +59,9 @@ public class TcpServer implements ClientActiveListener {
 
     public void end() {
         try {
-            for (ServerService serverService : clientServiceMap.values()) {
-                serverService.disconnect();
+            for (Map.Entry<String, ServerService> entry : serverServiceMap.entrySet()) {
+                entry.getValue().disconnect();
+                serverServiceMap.remove(entry.getKey());
             }
             clientAcceptGroup.shutdownGracefully().sync();
             clientServiceGroup.shutdownGracefully().sync();
@@ -70,13 +72,13 @@ public class TcpServer implements ClientActiveListener {
 
     public ServerService getServerService(String address) {
         assert tmp.equals(address) : "tmp is not the same with address";
-        return clientServiceMap.get(address);
+        return serverServiceMap.get(address);
     }
 
     @Override
     public void clientActivated(Channel channel, InetSocketAddress clientAddress) {
         tmp = clientAddress.toString();
-        clientServiceMap.put(clientAddress.toString(), new ServerService(channel));
+        serverServiceMap.put(clientAddress.toString(), new ServerService(channel));
         System.out.println("[Server] Activated client address = " + clientAddress.toString());
     }
 
