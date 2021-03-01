@@ -71,13 +71,11 @@ public class TcpServer implements ClientActiveListener {
     }
 
     public ServerService getServerService(String address) {
-        assert tmp.equals(address) : "tmp is not the same with address";
         return serverServiceMap.get(address);
     }
 
     @Override
     public void clientActivated(Channel channel, InetSocketAddress clientAddress) {
-        tmp = clientAddress.toString();
         serverServiceMap.put(clientAddress.toString(), new ServerService(channel));
         System.out.println("[Server] Activated client address = " + clientAddress.toString());
     }
