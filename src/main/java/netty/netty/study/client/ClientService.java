@@ -26,13 +26,13 @@ public class ClientService {
         return lastStatus;
     }
 
-    public void startConnectUntilSuccess(String ip, int port) throws Exception {
-        tcpClient.startConnectUntilSuccess(ip, port);
+    public void connectUntilSuccess(String ip, int port, int msecGap) throws Exception {
+        tcpClient.connectUntilSuccess(ip, port, msecGap);
     }
 
     public boolean connectOnce(String ip, int port) throws Exception {
 
-         return tcpClient.connectOnce(ip, port);
+         return tcpClient.connect(ip, port);
     }
 
     public void disconnect() throws InterruptedException {

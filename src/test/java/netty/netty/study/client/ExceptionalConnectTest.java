@@ -55,7 +55,7 @@ public class ExceptionalConnectTest {
 
         client.init();
 
-        client.startConnectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort(), 1000);
 
         Thread.sleep(10000);
 

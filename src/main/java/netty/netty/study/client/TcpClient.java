@@ -42,38 +42,44 @@ public class TcpClient implements InactiveListener {
     }
 
     /**
-     * EventLoopGroup 쓰레드를 통해 비동기적으로 연결에 성공 할 때 까지 연결 시도를 수행합니다.
-     * EventLoopGroup 쓰레드가 여러 채널에 의해 공유되고 있는 경우 사용해서는 안됩니다.
+     * 서버(ip,port)와 연결을 한 번 수행하고 완료 시 결과를 반환합니다.
      *
-     * @param ip
-     * @param port
+     * @param ip 서버 IP
+     * @param port 서버 Port
+     * @return 서버와 연결 결과
      */
-    // TODO 테스트 및 리팩토링, 안정화가 필요합니다.
-    public void startConnectUntilSuccess(String ip, int port) {
+    public boolean connect(String ip, int port) {
         this.serverIp = ip;
         this.serverPort = port;
 
-        // TODO 반드시 동시에 여러번 호출되지 않음을 확인하는 Assert 문이라든지 방어 코드가 들어가야할 것으로 보임
+        return connectOnce();
+    }
+
+    /**
+     * 서버(ip,port)와 연결이 성공할 때 까지 반복해서 연결을 시도합니다.
+     * connectUntilSuccessFuture 를 통해 반복되는 연결 동작을 취소할 수 있습니다.
+     * connectUntilSuccess()함수는 비동기적으로 수행됩니다.
+     *
+     * @param ip 서버 IP
+     * @param port 서버 Port
+     * @param msecGap 연결 실패 시, 반복해서 연결을 시도할 시간 간격 (msec)
+     * @see connectUntilSuccessFuture
+     */
+    public void connectUntilSuccess(String ip, int port, int msecGap) {
+        this.serverIp = ip;
+        this.serverPort = port;
 
         connectUntilSuccessFuture = bootstrap.config().group().submit(() -> {
             boolean connected = false;
             do {
                 connected = connectOnce();
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(msecGap);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             } while (!connected);
         });
-
-    }
-
-    public boolean connectOnce(String ip, int port) {
-        this.serverIp = ip;
-        this.serverPort = port;
-
-        return connectOnce();
     }
 
     private boolean connectOnce() {
@@ -81,7 +87,7 @@ public class TcpClient implements InactiveListener {
 
         ChannelFuture channelFuture = null;
         try {
-            channelFuture = bootstrap.connect(this.serverIp, this.serverPort).syncUninterruptibly();
+            channelFuture = bootstrap.connect(this.serverIp, this.serverPort).sync();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -97,14 +103,12 @@ public class TcpClient implements InactiveListener {
 
     public void disconnect() {
         try {
-            // TODO 테스트 및 리팩토링, 안정화가 필요합니다.
-            if (connectUntilSuccessFuture!=null && !connectUntilSuccessFuture.isDone()) {
+            if (connectUntilSuccessFuture != null && !connectUntilSuccessFuture.isDone()) {
                 connectUntilSuccessFuture.cancel(true);
             }
-            // TODO ----
 
             if (channel != null) {
-                channel.close().syncUninterruptibly();
+                channel.close().sync();
                 channel = null;
             }
         } catch (Exception e) {
@@ -149,8 +153,13 @@ public class TcpClient implements InactiveListener {
         return (InetSocketAddress) channel.localAddress();
     }
 
+    /**
+     * 서버와 연결이 끊어진 경우 비동기적으로 연결복구를 시작합니다.
+     *
+     * @see connectUntilSuccess()
+     */
     @Override
     public void channelInactiveOccurred() {
-        startConnectUntilSuccess(serverIp, serverPort);
+       connectUntilSuccess(this.serverIp, this.serverPort, 1000);
     }
 }
