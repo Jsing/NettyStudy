@@ -68,7 +68,7 @@ public class TcpClient implements InactiveListener {
      * @param msecGap 연결 실패 시, 반복해서 연결을 시도할 시간 간격 (msec)
      * @see connectUntilSuccessFuture
      */
-    public void connectUntilSuccessAsync(String ip, int port, int msecGap) {
+    public void connectUntilSuccess(String ip, int port, int msecGap) {
         this.serverIp = ip;
         this.serverPort = port;
 
@@ -164,6 +164,6 @@ public class TcpClient implements InactiveListener {
      */
     @Override
     public void channelInactiveOccurred() {
-       connectUntilSuccessAsync(this.serverIp, this.serverPort, 1000);
+       connectUntilSuccess(this.serverIp, this.serverPort, 1000);
     }
 }

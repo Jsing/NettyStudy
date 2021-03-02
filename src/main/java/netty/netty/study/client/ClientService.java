@@ -27,7 +27,7 @@ public class ClientService {
     }
 
     public void connectUntilSuccess(String ip, int port, int msecGap) throws Exception {
-        tcpClient.connectUntilSuccessAsync(ip, port, msecGap);
+        tcpClient.connectUntilSuccess(ip, port, msecGap);
     }
 
     public boolean connectOnce(String ip, int port) throws Exception {
