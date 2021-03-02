@@ -52,6 +52,8 @@ public class TcpClient implements InactiveListener {
         this.serverIp = ip;
         this.serverPort = port;
 
+        this.disconnect();
+
         return connectOnce();
     }
 
@@ -70,6 +72,8 @@ public class TcpClient implements InactiveListener {
         this.serverIp = ip;
         this.serverPort = port;
 
+        this.disconnect();
+
         connectUntilSuccessFuture = bootstrap.config().group().submit(() -> {
             boolean connected = false;
             do {
@@ -84,8 +88,6 @@ public class TcpClient implements InactiveListener {
     }
 
     private boolean connectOnce() {
-        this.disconnect();
-
         ChannelFuture channelFuture = null;
         try {
             channelFuture = bootstrap.connect(this.serverIp, this.serverPort).sync();
