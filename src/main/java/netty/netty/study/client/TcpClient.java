@@ -57,15 +57,16 @@ public class TcpClient implements InactiveListener {
 
     /**
      * 서버(ip,port)와 연결이 성공할 때 까지 반복해서 연결을 시도합니다.
+     * 본 함수는 호출 쓰레드와 비동기적으로 수행되며 EventLoop 쓰레드에 의해 반복 작업을 수행합니다.
+     * 만약 EventLoop 쓰레드를 여러 채널과 공유해서 사용한다면 아래 함수를 사용할 수 없습니다.
      * connectUntilSuccessFuture 를 통해 반복되는 연결 동작을 취소할 수 있습니다.
-     * connectUntilSuccess()함수는 비동기적으로 수행됩니다.
      *
      * @param ip 서버 IP
      * @param port 서버 Port
      * @param msecGap 연결 실패 시, 반복해서 연결을 시도할 시간 간격 (msec)
      * @see connectUntilSuccessFuture
      */
-    public void connectUntilSuccess(String ip, int port, int msecGap) {
+    public void connectUntilSuccessAsync(String ip, int port, int msecGap) {
         this.serverIp = ip;
         this.serverPort = port;
 
@@ -105,6 +106,7 @@ public class TcpClient implements InactiveListener {
         try {
             if (connectUntilSuccessFuture != null && !connectUntilSuccessFuture.isDone()) {
                 connectUntilSuccessFuture.cancel(true);
+                connectUntilSuccessFuture = null;
             }
 
             if (channel != null) {
@@ -160,6 +162,6 @@ public class TcpClient implements InactiveListener {
      */
     @Override
     public void channelInactiveOccurred() {
-       connectUntilSuccess(this.serverIp, this.serverPort, 1000);
+       connectUntilSuccessAsync(this.serverIp, this.serverPort, 1000);
     }
 }

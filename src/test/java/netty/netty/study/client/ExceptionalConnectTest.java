@@ -7,6 +7,8 @@ import netty.netty.study.server.TcpServer;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class ExceptionalConnectTest {
@@ -122,6 +124,34 @@ public class ExceptionalConnectTest {
 
         System.out.println("[Client] disconnect");
         client.disconnect();
+    }
+
+    @Test
+    @DisplayName("반복 연결 취소")
+    @SneakyThrows
+    void cancelThatConnectUntilSuccess() {
+        TcpServer server = new TcpServer(ServerAddress.getPort());
+        ClientService client = new ClientService();
+
+        client.init();
+
+        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort(), 1000);
+
+        Thread.sleep(3000);
+
+        client.disconnect();
+// TODO
+    }
+
+
+    @Test
+    @DisplayName("자동 복구 코드 동작 중 사용자 연결 시도")
+    @SneakyThrows
+    void userConnectInRecovery() {
+// TODO
+        AtomicLong myLong = new AtomicLong();
+
+        myLong.addAndGet(2);
     }
 
     @SneakyThrows
