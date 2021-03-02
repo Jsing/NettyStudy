@@ -140,7 +140,18 @@ public class ExceptionalConnectTest {
         Thread.sleep(3000);
 
         client.disconnect();
-// TODO
+
+        server.start();
+
+        Thread.sleep(1000);
+
+        Assertions.assertFalse(client.isActive());
+
+        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort(), 1000);
+
+        Thread.sleep(1000);
+
+        Assertions.assertTrue(client.isActive());
     }
 
 
@@ -148,10 +159,7 @@ public class ExceptionalConnectTest {
     @DisplayName("자동 복구 코드 동작 중 사용자 연결 시도")
     @SneakyThrows
     void userConnectInRecovery() {
-// TODO
-        AtomicLong myLong = new AtomicLong();
 
-        myLong.addAndGet(2);
     }
 
     @SneakyThrows
