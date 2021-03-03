@@ -26,8 +26,8 @@ public class ClientService {
         return lastStatus;
     }
 
-    public void connectUntilSuccess(String ip, int port, int msecGap) throws Exception {
-        tcpClient.connectUntilSuccess(ip, port, msecGap);
+    public void connectUntilSuccess(String ip, int port) throws Exception {
+        tcpClient.connectUntilSuccess(ip, port);
     }
 
     public boolean connectOnce(String ip, int port) throws Exception {

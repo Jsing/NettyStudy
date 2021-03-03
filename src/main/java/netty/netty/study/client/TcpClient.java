@@ -65,26 +65,19 @@ public class TcpClient implements InactiveListener {
      *
      * @param ip 서버 IP
      * @param port 서버 Port
-     * @param msecGap 연결 실패 시, 반복해서 연결을 시도할 시간 간격 (msec)
-     * @see connectUntilSuccessFuture
      */
-    public void connectUntilSuccess(String ip, int port, int msecGap) {
+    public void connectUntilSuccess(String ip, int port) {
         this.serverIp = ip;
         this.serverPort = port;
 
         this.disconnect();
 
-        connectUntilSuccessFuture = bootstrap.config().group().submit(() -> {
-            boolean connected = false;
-            do {
-                connected = connectOnce();
-                try {
-                    Thread.sleep(msecGap);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            } while (!connected);
-        });
+        connectUntilSuccessFuture = bootstrap.config().group().scheduleAtFixedRate(() -> {
+            connectOnce();
+
+            System.out.println("connectOnce() invoked!");
+
+        }, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     private boolean connectOnce() {
@@ -164,6 +157,6 @@ public class TcpClient implements InactiveListener {
      */
     @Override
     public void channelInactiveOccurred() {
-       connectUntilSuccess(this.serverIp, this.serverPort, 1000);
+       connectUntilSuccess(this.serverIp, this.serverPort);
     }
 }

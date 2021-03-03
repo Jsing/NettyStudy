@@ -57,7 +57,7 @@ public class ExceptionalConnectTest {
 
         client.init();
 
-        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort(), 1000);
+        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
 
         Thread.sleep(10000);
 
@@ -135,23 +135,37 @@ public class ExceptionalConnectTest {
 
         client.init();
 
-        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort(), 1000);
+        System.out.println("[Client] start connectUntilSuccess()");
+        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+
+        Thread.sleep(1000);
+
+        System.out.println("[Client] cancel connectUntilSuccess()");
+        client.disconnect();
+
+        Thread.sleep(1200);
+
+        System.out.println("[Server] start()");
+        server.start();
 
         Thread.sleep(3000);
 
-        client.disconnect();
-
-        server.start();
-
-        Thread.sleep(1000);
-
+        System.out.println("[Client] Assertions.assertFalse(client.isActive()) = " + client.isActive());
         Assertions.assertFalse(client.isActive());
 
-        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort(), 1000);
+        System.out.println("[Client] start connectUntilSuccess()");
+        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
 
         Thread.sleep(1000);
 
+        System.out.println("[Client] Assertions.assertTrue(client.isActive()) = " + client.isActive());
         Assertions.assertTrue(client.isActive());
+
+        System.out.println("[Server] shutdown");
+        server.shutdown();
+
+        System.out.println("[Client] disconnect");
+        client.disconnect();
     }
 
 
