@@ -7,11 +7,12 @@ import netty.netty.study.server.TcpServer;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.*;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-public class ExceptionalConnectTest {
+public class
+ExceptionalConnectTest {
 
     @Test
     @DisplayName("N Reconnect->Transfer")
@@ -26,7 +27,7 @@ public class ExceptionalConnectTest {
         client.init();
 
         for (int i = 0; i < nRepeat; i++) {
-            boolean connected = client.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
+            boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
             Assertions.assertEquals(true, connected);
 
             String testMessage = testBaseMessage + String.valueOf(i);
@@ -85,7 +86,7 @@ public class ExceptionalConnectTest {
 
         System.out.println("[Client] connect");
         client.init();
-        client.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
+        client.connect(ServerAddress.getIp(), ServerAddress.getPort());
 
         System.out.println("[Client] sleep during 1sec");
         Thread.sleep(1000);
@@ -168,12 +169,80 @@ public class ExceptionalConnectTest {
         client.disconnect();
     }
 
+    @Test
+    @DisplayName("가변 연결 Timeout 시간")
+    @SneakyThrows
+    void variableConnectionTimeout() {
+        boolean connected = false;
+
+        TcpServer server = new TcpServer(ServerAddress.getPort());
+        ClientService client = new ClientService();
+
+        client.init();
+
+        System.out.println("[Client] connect will timeout in 1 sec");
+        connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        System.out.println("connect() returns = " + connected);
+
+        System.out.println("[Client] connect will timeout in 5 sec");
+        connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        System.out.println("connect() returns = " + connected);
+
+        System.out.println("[Client] connect will timeout in 10 sec");
+        connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        System.out.println("connect() returns = " + connected);
+
+        System.out.println("[Client] connectUntilSuccess");
+        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+
+        System.out.println("[Server] server starts");
+        server.start();
+
+        Thread.sleep(10000);
+
+        server.shutdown();
+        client.disconnect();
+    }
 
     @Test
     @DisplayName("자동 복구 코드 동작 중 사용자 연결 시도")
     @SneakyThrows
     void userConnectInRecovery() {
+        boolean connected = false;
 
+        TcpServer server = new TcpServer(ServerAddress.getPort());
+        ClientService client = new ClientService();
+
+        client.init();
+
+        System.out.println("[Client] connect");
+        connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+
+        System.out.println("[Client] sleep(1000)");
+        Thread.sleep(1000);
+
+        System.out.println("[Client] connectUntilSuccess()");
+        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+
+        System.out.println("[Client] sleep(1000)");
+        Thread.sleep(1000);
+
+        System.out.println("[Server] server starts");
+        server.start();
+
+        System.out.println("[Client] sleep(1000)");
+        Thread.sleep(1000);
+
+        System.out.println("[Client] isActive() = " + client.isActive());
+        Assertions.assertTrue(client.isActive());
+
+        transfer(server, client);
+
+
+        Thread.sleep(10000);
+
+        server.shutdown();
+        client.disconnect();
     }
 
     @SneakyThrows
@@ -184,13 +253,16 @@ public class ExceptionalConnectTest {
 
         Thread.sleep(30);
 
+        System.out.println("[Client] send() = " + testMessage);
         client.send(testMessage);
 
         Thread.sleep(30);
 
         ServerService serverService = server.getServerService(client.getLocalAddress().toString());
         String msgReceived = serverService.lastStatus().get();
+        System.out.println("[Server] receive() = " + msgReceived);
 
+        System.out.println("[Server] assertEquals() = " + testMessage + " : " + msgReceived);
         Assertions.assertEquals(testMessage, msgReceived);
     }
 

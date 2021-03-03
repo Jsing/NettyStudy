@@ -38,7 +38,7 @@ public class FrameDecoderTest {
         ClientService clientService = new ClientService();
         clientService.init();
 
-        boolean connected = clientService.connectOnce(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean connected = clientService.connect(ServerAddress.getIp(), ServerAddress.getPort());
 
         connected = clientService.isActive();
 

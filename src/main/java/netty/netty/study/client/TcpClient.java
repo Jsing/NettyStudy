@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -18,15 +19,16 @@ public class TcpClient implements InactiveListener {
     private Channel channel;
     private String serverIp;
     private int serverPort;
-    private Future<?> connectUntilSuccessFuture;
+    private CountDownLatch cancelConnectUntilSuccess;
 
     public void init(ChannelInitializer<?> channelInitializer) {
+        final int connectTimeoutMillis = 3000;
         EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
 
         bootstrap.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis)
                 .option(ChannelOption.TCP_NODELAY, true)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
                 .handler(channelInitializer);
     }
 
@@ -41,55 +43,46 @@ public class TcpClient implements InactiveListener {
         }
     }
 
-    /**
-     * 서버(ip,port)와 연결을 한 번 수행하고 완료 시 결과를 반환합니다.
-     *
-     * @param ip 서버 IP
-     * @param port 서버 Port
-     * @return 서버와 연결 결과
-     */
     public boolean connect(String ip, int port) {
         this.serverIp = ip;
         this.serverPort = port;
 
         this.disconnect();
 
-        return connectOnce();
+        return _connectOnce(ip, port);
     }
 
-    /**
-     * 서버(ip,port)와 연결이 성공할 때 까지 반복해서 연결을 시도합니다.
-     * 본 함수는 호출 쓰레드와 비동기적으로 수행되며 EventLoop 쓰레드에 의해 반복 작업을 수행합니다.
-     * 만약 EventLoop 쓰레드를 여러 채널과 공유해서 사용한다면 아래 함수를 사용할 수 없습니다.
-     * connectUntilSuccessFuture 를 통해 반복되는 연결 동작을 취소할 수 있습니다.
-     *
-     * @param ip 서버 IP
-     * @param port 서버 Port
-     */
     public void connectUntilSuccess(String ip, int port) {
         this.serverIp = ip;
         this.serverPort = port;
 
         this.disconnect();
 
-        connectUntilSuccessFuture = bootstrap.config().group().scheduleAtFixedRate(() -> {
-            connectOnce();
-
-            System.out.println("connectOnce() invoked!");
-
-        }, 0, 1000, TimeUnit.MILLISECONDS);
+        cancelConnectUntilSuccess = new CountDownLatch(1);
+        bootstrap.config().group().submit( () -> {
+            boolean connected = false;
+            do {
+                if (cancelConnectUntilSuccess.await(100, TimeUnit.MILLISECONDS)) {
+                    break;
+                }
+                connected = _connectOnce(ip, port);
+            } while (!connected);
+            cancelConnectUntilSuccess.countDown();
+            cancelConnectUntilSuccess = null;
+            return null;
+        });
     }
 
-    private boolean connectOnce() {
+    private synchronized boolean _connectOnce(String ip, int port) {
         ChannelFuture channelFuture = null;
         try {
-            channelFuture = bootstrap.connect(this.serverIp, this.serverPort).sync();
+            channelFuture = bootstrap.connect(ip, port).sync();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
 
-        if (channelFuture.isSuccess() == false) {
+        if (!channelFuture.isSuccess()) {
             return false;
         }
 
@@ -99,9 +92,9 @@ public class TcpClient implements InactiveListener {
 
     public void disconnect() {
         try {
-            if (connectUntilSuccessFuture != null && !connectUntilSuccessFuture.isDone()) {
-                connectUntilSuccessFuture.cancel(true);
-                connectUntilSuccessFuture = null;
+            if (cancelConnectUntilSuccess != null) {
+                cancelConnectUntilSuccess.countDown();
+                cancelConnectUntilSuccess = null;
             }
 
             if (channel != null) {
@@ -150,13 +143,11 @@ public class TcpClient implements InactiveListener {
         return (InetSocketAddress) channel.localAddress();
     }
 
-    /**
-     * 서버와 연결이 끊어진 경우 비동기적으로 연결복구를 시작합니다.
-     *
-     * @see connectUntilSuccess()
-     */
     @Override
     public void channelInactiveOccurred() {
-       connectUntilSuccess(this.serverIp, this.serverPort);
+        final int eachConnectTimeoutMillis = 3000;
+        final int retryGapMillis = 1000;
+
+        connectUntilSuccess(this.serverIp, this.serverPort);
     }
 }
