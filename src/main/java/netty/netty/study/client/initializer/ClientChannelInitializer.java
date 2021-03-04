@@ -26,7 +26,6 @@ public class ClientChannelInitializer extends ChannelInitializer<SocketChannel> 
                 new StringDecoder(CharsetUtil.UTF_8),
                 new HelloStarterHandler(),
                 new LastStatusUpdateHandler(this.updateListener),
-                new ChannelExceptionHandler(inactiveListener),
 
                 // 전송
                 new StringEncoder(CharsetUtil.UTF_8));

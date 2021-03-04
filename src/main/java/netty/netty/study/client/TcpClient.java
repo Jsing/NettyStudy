@@ -6,7 +6,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ScheduledFuture;
-import lombok.extern.slf4j.Slf4j;
+import netty.netty.study.client.handler.ChannelExceptionHandler;
 import netty.netty.study.data.ConnectionTag;
 import org.springframework.lang.Nullable;
 
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * Netty 기반의 TCP Client 서비스를 제공합니다. TcpClient 는 Netty 종속적인 대부분의 구현을 캡슐화합니다.
  * 1. 초기화
  * - TcpClient 는 응용 계층 프로토콜에 따라서 적절한 채널 파이프라인 설정이 필요합니다.
- * - 이를 위해 반드시 적절한 ChannelInitializer 와 함께 init()함수를 통해 초기화 되어야 합니다.
+ * - 이를 위해 반드시 적절한 ChannelInitializer 와 함께 init()함수를 호출하여 TcpClient 초기화를 수행해야 합니다.
  * 2. 연결
  * - 동기화 메쏘드 connect() 함수를 통해서 한 번의 연결 시도를 수행할 수 있습니다.
  * - 비동기 메쏘드 connectUntilSuccess() 함수를 통해서 연결이 성공할 때 까지 연결을 시도하는 태스크를 실행할 수 있습니다.
@@ -85,7 +85,7 @@ public class TcpClient implements InactiveListener {
 
         this.disconnect();
 
-        return _connectOnce(connectionTag);
+        return connectOnce(connectionTag);
     }
 
     /**
@@ -96,7 +96,7 @@ public class TcpClient implements InactiveListener {
      * @param connectionTag 연결 정보
      */
     public void connectUntilSuccess(ConnectionTag connectionTag) {
-        this.connectionTag = this.connectionTag;
+        this.connectionTag = connectionTag;
 
         this.disconnect();
 
@@ -107,7 +107,7 @@ public class TcpClient implements InactiveListener {
                 if (cancelConnectUntilSuccess.await(100, TimeUnit.MILLISECONDS)) {
                     break;
                 }
-                connected = _connectOnce(connectionTag);
+                connected = connectOnce(connectionTag);
             } while (!connected);
             cancelConnectUntilSuccess.countDown();
             cancelConnectUntilSuccess = null;
@@ -122,7 +122,7 @@ public class TcpClient implements InactiveListener {
      * @return true : connection success
      *         false : fail
      */
-    private synchronized boolean _connectOnce(ConnectionTag connectionTag) {
+    private synchronized boolean connectOnce(ConnectionTag connectionTag) {
         ChannelFuture channelFuture = null;
         try {
             channelFuture = bootstrap.connect(connectionTag.getIp(), connectionTag.getPort()).sync();
@@ -136,6 +136,8 @@ public class TcpClient implements InactiveListener {
         }
 
         channel = channelFuture.channel();
+
+        channel.pipeline().addLast(new ChannelExceptionHandler((InactiveListener) this));
         return true;
     }
 
