@@ -7,8 +7,6 @@ import netty.netty.study.server.TcpServer;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.concurrent.*;
-
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class
@@ -21,13 +19,13 @@ ExceptionalConnectTest {
         final int nRepeat = 100;
         final String testBaseMessage = "Hello I am Jsing";
 
-        TcpServer server = new TcpServer(ServerAddress.getPort());
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
         server.start();
         ClientService client = new ClientService();
         client.init();
 
         for (int i = 0; i < nRepeat; i++) {
-            boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+            boolean connected = client.connect(ServerAddress.info());
             Assertions.assertEquals(true, connected);
 
             String testMessage = testBaseMessage + String.valueOf(i);
@@ -53,12 +51,12 @@ ExceptionalConnectTest {
     @DisplayName("연결 성공할 때 까지 시도")
     @SneakyThrows
     void clientConnectUntilSuccess() {
-        TcpServer server = new TcpServer(ServerAddress.getPort());
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
         ClientService client = new ClientService();
 
         client.init();
 
-        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+        client.connectUntilSuccess(ServerAddress.info());
 
         Thread.sleep(10000);
 
@@ -78,7 +76,7 @@ ExceptionalConnectTest {
     @DisplayName("연결 복구")
     @SneakyThrows
     void connectionRecovery() {
-        TcpServer server = new TcpServer(ServerAddress.getPort());
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
         ClientService client = new ClientService();
 
         System.out.println("[Server] start");
@@ -86,7 +84,7 @@ ExceptionalConnectTest {
 
         System.out.println("[Client] connect");
         client.init();
-        client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        client.connect(ServerAddress.info());
 
         System.out.println("[Client] sleep during 1sec");
         Thread.sleep(1000);
@@ -131,13 +129,13 @@ ExceptionalConnectTest {
     @DisplayName("반복 연결 취소")
     @SneakyThrows
     void cancelThatConnectUntilSuccess() {
-        TcpServer server = new TcpServer(ServerAddress.getPort());
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
         ClientService client = new ClientService();
 
         client.init();
 
         System.out.println("[Client] start connectUntilSuccess()");
-        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+        client.connectUntilSuccess(ServerAddress.info());
 
         Thread.sleep(1000);
 
@@ -155,7 +153,7 @@ ExceptionalConnectTest {
         Assertions.assertFalse(client.isActive());
 
         System.out.println("[Client] start connectUntilSuccess()");
-        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+        client.connectUntilSuccess(ServerAddress.info());
 
         Thread.sleep(1000);
 
@@ -175,25 +173,25 @@ ExceptionalConnectTest {
     void variableConnectionTimeout() {
         boolean connected = false;
 
-        TcpServer server = new TcpServer(ServerAddress.getPort());
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
         ClientService client = new ClientService();
 
         client.init();
 
         System.out.println("[Client] connect will timeout in 1 sec");
-        connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        connected = client.connect(ServerAddress.info());
         System.out.println("connect() returns = " + connected);
 
         System.out.println("[Client] connect will timeout in 5 sec");
-        connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        connected = client.connect(ServerAddress.info());
         System.out.println("connect() returns = " + connected);
 
         System.out.println("[Client] connect will timeout in 10 sec");
-        connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        connected = client.connect(ServerAddress.info());
         System.out.println("connect() returns = " + connected);
 
         System.out.println("[Client] connectUntilSuccess");
-        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+        client.connectUntilSuccess(ServerAddress.info());
 
         System.out.println("[Server] server starts");
         server.start();
@@ -210,19 +208,19 @@ ExceptionalConnectTest {
     void userConnectInRecovery() {
         boolean connected = false;
 
-        TcpServer server = new TcpServer(ServerAddress.getPort());
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
         ClientService client = new ClientService();
 
         client.init();
 
         System.out.println("[Client] connect");
-        connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        connected = client.connect(ServerAddress.info());
 
         System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);
 
         System.out.println("[Client] connectUntilSuccess()");
-        client.connectUntilSuccess(ServerAddress.getIp(), ServerAddress.getPort());
+        client.connectUntilSuccess(ServerAddress.info());
 
         System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);

@@ -7,6 +7,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
+import netty.netty.study.data.ConnectionTag;
 import org.springframework.lang.Nullable;
 
 import java.net.InetSocketAddress;
@@ -31,12 +32,10 @@ import java.util.concurrent.TimeUnit;
  * @author Jsing
  * @see InactiveListener
  */
-@Slf4j
 public class TcpClient implements InactiveListener {
     private final Bootstrap bootstrap = new Bootstrap();
     private Channel channel;
-    private String serverIp;
-    private int serverPort;
+    private ConnectionTag connectionTag;
     /**
      * 비동기적으로 EventLoop 쓰레드에 의해 수행되는 connectUntilSuccess() 태스크 수행을 취소할 수 있습니다.
      */
@@ -77,18 +76,16 @@ public class TcpClient implements InactiveListener {
      * 서버와 연결을 (한번) 시도하고 결과를 반환합니다. 기존에 연결된 채널이 있으면 연결을 종료합니다.
      * connect() 메쏘드는 호출 쓰레드와 동기화되어 수행됩니다.
      *
-     * @param ip 서버 IP
-     * @param port 서버 Port
+     * @param connectionTag 연결 정보
      * @return true : connection success
      *         false : fail
      */
-    public boolean connect(String ip, int port) {
-        this.serverIp = ip;
-        this.serverPort = port;
+    public boolean connect(ConnectionTag connectionTag) {
+        this.connectionTag = connectionTag;
 
         this.disconnect();
 
-        return _connectOnce(ip, port);
+        return _connectOnce(connectionTag);
     }
 
     /**
@@ -96,12 +93,10 @@ public class TcpClient implements InactiveListener {
      * connectUntilSuccess() 메쏘드의 연결 수행 동작은 EventLoop 쓰레드에서 비동기적으로 수행됩니다.
      * connectUntilSuccess() 메쏘드는 EventLoop 쓰레드에 태스크를 할당하고 즉시 반환됩니다.
      *
-     * @param ip 서버 IP
-     * @param port 서버 Port
+     * @param connectionTag 연결 정보
      */
-    public void connectUntilSuccess(String ip, int port) {
-        this.serverIp = ip;
-        this.serverPort = port;
+    public void connectUntilSuccess(ConnectionTag connectionTag) {
+        this.connectionTag = this.connectionTag;
 
         this.disconnect();
 
@@ -112,7 +107,7 @@ public class TcpClient implements InactiveListener {
                 if (cancelConnectUntilSuccess.await(100, TimeUnit.MILLISECONDS)) {
                     break;
                 }
-                connected = _connectOnce(ip, port);
+                connected = _connectOnce(connectionTag);
             } while (!connected);
             cancelConnectUntilSuccess.countDown();
             cancelConnectUntilSuccess = null;
@@ -123,15 +118,14 @@ public class TcpClient implements InactiveListener {
     /**
      * connect()와 connectUntilSuccess() 메쏘드에서 서버와 연결을 (한번) 시도하는 공용 코드를 구현합니다.
      *
-     * @param ip 서버 IP
-     * @param port 서버 Port
+     * @param connectionTag 연결 정보
      * @return true : connection success
      *         false : fail
      */
-    private synchronized boolean _connectOnce(String ip, int port) {
+    private synchronized boolean _connectOnce(ConnectionTag connectionTag) {
         ChannelFuture channelFuture = null;
         try {
-            channelFuture = bootstrap.connect(ip, port).sync();
+            channelFuture = bootstrap.connect(connectionTag.getIp(), connectionTag.getPort()).sync();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -208,6 +202,6 @@ public class TcpClient implements InactiveListener {
      */
     @Override
     public void channelInactiveOccurred() {
-        connectUntilSuccess(this.serverIp, this.serverPort);
+        connectUntilSuccess(this.connectionTag);
     }
 }

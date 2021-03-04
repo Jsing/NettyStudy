@@ -17,7 +17,7 @@ class MsgTransferTest {
     @Test
     void contextLoad() throws Exception {
         // 서버 생성
-        server = new TcpServer(ServerAddress.getPort());
+        server = new TcpServer(ServerAddress.info().getPort());
         server.start();
 
         // 클라이언트 생성
@@ -25,7 +25,7 @@ class MsgTransferTest {
         clientServcie.init();
 
         // 연결
-        boolean isConnected = clientServcie.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean isConnected = clientServcie.connect(ServerAddress.info());
         Assertions.assertEquals( true, isConnected );
 
     }

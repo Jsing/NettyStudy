@@ -17,7 +17,7 @@ public class ConnectTest {
     @BeforeEach
     @SneakyThrows
     void contextUp() {
-        server = new TcpServer(ServerAddress.getPort());
+        server = new TcpServer(ServerAddress.info().getPort());
         server.start();
         client = new ClientService();
         client.init();
@@ -34,7 +34,7 @@ public class ConnectTest {
     @DisplayName("연결 성공")
     @SneakyThrows
     void connectionSuccess() throws Exception {
-        boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean connected = client.connect(ServerAddress.info());
         Assertions.assertEquals(true, connected);
     }
 
@@ -43,7 +43,7 @@ public class ConnectTest {
     @SneakyThrows
     void noServer() {
         String noServerIp = "172.30.12.1";
-        boolean connected = client.connect(noServerIp, ServerAddress.getPort());
+        boolean connected = client.connect(ServerAddress.info());
         Assertions.assertEquals(false, connected);
     }
 
@@ -51,9 +51,9 @@ public class ConnectTest {
     @DisplayName("원격 서버 포트 없음")
     @SneakyThrows
     void noServerPort() {
-        final int noServerPort = ServerAddress.getPort()-1;
+        final int noServerPort = ServerAddress.info().getPort()-1;
 
-        boolean connected = client.connect(ServerAddress.getIp(), noServerPort);
+        boolean connected = client.connect(ServerAddress.info());
         Assertions.assertEquals(false, connected);
     }
 
@@ -63,7 +63,7 @@ public class ConnectTest {
     void clientToServerTransfer() {
         String testMessage = "I am Jsing";
 
-        boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean connected = client.connect(ServerAddress.info());
         Assertions.assertEquals(true, connected);
 
         Thread.sleep(100);
@@ -81,7 +81,7 @@ public class ConnectTest {
     @DisplayName("Server->Client")
     @SneakyThrows
     void serverToClientTransfer() {
-        boolean connected = client.connect(ServerAddress.getIp(), ServerAddress.getPort());
+        boolean connected = client.connect(ServerAddress.info());
         Assertions.assertEquals(true, connected);
     }
 

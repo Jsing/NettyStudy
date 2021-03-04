@@ -2,6 +2,7 @@ package netty.netty.study.client;
 
 import lombok.extern.slf4j.Slf4j;
 import netty.netty.study.client.initializer.ClientChannelInitializer;
+import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.data.LastStatus;
 
 import java.net.InetSocketAddress;
@@ -26,13 +27,13 @@ public class ClientService {
         return lastStatus;
     }
 
-    public void connectUntilSuccess(String ip, int port) {
-        tcpClient.connectUntilSuccess(ip, port);
+    public void connectUntilSuccess(ConnectionTag connectionTag) {
+        tcpClient.connectUntilSuccess(connectionTag);
     }
 
-    public boolean connect(String ip, int port) {
+    public boolean connect(ConnectionTag connectionTag) {
 
-         return tcpClient.connect(ip, port);
+         return tcpClient.connect(connectionTag);
     }
 
     public void disconnect() {
