@@ -2,6 +2,7 @@ package netty.netty.study.client;
 
 import lombok.SneakyThrows;
 import netty.netty.study.configure.ServerAddress;
+import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.server.ServerService;
 import netty.netty.study.server.TcpServer;
 import org.junit.jupiter.api.*;
@@ -42,8 +43,10 @@ public class ConnectTest {
     @DisplayName("원격 서버 없음")
     @SneakyThrows
     void noServer() {
-        String noServerIp = "172.30.12.1";
-        boolean connected = client.connect(ServerAddress.info());
+        final ConnectionTag connectionTag =  new ConnectionTag("172.30.12.1",
+                ServerAddress.info().getPort()-1);
+
+        boolean connected = client.connect(connectionTag);
         Assertions.assertEquals(false, connected);
     }
 
@@ -51,9 +54,10 @@ public class ConnectTest {
     @DisplayName("원격 서버 포트 없음")
     @SneakyThrows
     void noServerPort() {
-        final int noServerPort = ServerAddress.info().getPort()-1;
+        final ConnectionTag connectionTag =  new ConnectionTag(ServerAddress.info().getIp(),
+                        ServerAddress.info().getPort()-1);
 
-        boolean connected = client.connect(ServerAddress.info());
+        boolean connected = client.connect(connectionTag);
         Assertions.assertEquals(false, connected);
     }
 
