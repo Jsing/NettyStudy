@@ -41,6 +41,7 @@ public class TcpClient implements InactiveListener {
      * 비동기적으로 EventLoop 쓰레드에 의해 수행되는 connectUntilSuccess() 태스크 수행을 취소할 수 있습니다.
      */
     private CountDownLatch cancelConnectUntilSuccess; // TODO : is this thread-safe???
+    private boolean shouldChannelRecovery = true;
 
     /**
      * TcpClient 를 초기화 합니다. TcpClient 는 사용전 반드시 init() 함수를 통해 초기화되어야 합니다.
@@ -134,6 +135,8 @@ public class TcpClient implements InactiveListener {
             return false;
         }
 
+        shouldChannelRecovery = true;
+
         channel = channelFuture.channel();
 
         channel.pipeline().addLast(new ChannelExceptionHandler(this));
@@ -145,6 +148,7 @@ public class TcpClient implements InactiveListener {
      * connectUntilSuccess()에 의해 비동기적으로 수행중인 연결 태스크가 살아 있으면 태스크를 종료합니다.
      */
     public void disconnect() {
+        shouldChannelRecovery = false; // 명시적으로 연결을 끊는 경우 연결 복구 로직 OFF
         try {
             if (cancelConnectUntilSuccess != null) {
                 cancelConnectUntilSuccess.countDown();
@@ -203,6 +207,8 @@ public class TcpClient implements InactiveListener {
      */
     @Override
     public void channelInactiveOccurred() {
-        connectUntilSuccess(this.connectionTag);
+        if (shouldChannelRecovery) {
+            connectUntilSuccess(this.connectionTag);
+        }
     }
 }

@@ -208,6 +208,39 @@ ExceptionalConnectTest {
         client.disconnect();
     }
 
+    @Test
+    @DisplayName("Not Channel Recovery When Explicit Disconnect ")
+    @SneakyThrows
+    void notRecoveryWhenExplicitDisconnect() {
+        boolean connected = false;
+
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
+        ClientService client = new ClientService();
+
+        server.start();
+        client.init();
+
+        System.out.println("[Client] connect");
+        connected = client.connect(ServerAddress.info());
+
+        System.out.println("[Client] sleep(1000)");
+        Thread.sleep(1000);
+
+        System.out.println("[Client] isActive() = " + client.isActive());
+        Assertions.assertTrue(client.isActive());
+
+        System.out.println("[Client] disconnect explicitly");
+        client.disconnect();
+
+        Thread.sleep(5000);
+
+        System.out.println("[Client] isActive() = " + client.isActive());
+        Assertions.assertFalse(client.isActive());
+
+        server.shutdown();
+        client.disconnect();
+    }
+
     @SneakyThrows
     void transfer(TcpServer server, ClientService client) {
         final String testBaseMessage = "Hello I am Jsing";
