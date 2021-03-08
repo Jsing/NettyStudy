@@ -168,41 +168,6 @@ ExceptionalConnectTest {
     }
 
     @Test
-    @DisplayName("가변 연결 Timeout 시간")
-    @SneakyThrows
-    void variableConnectionTimeout() {
-        boolean connected = false;
-
-        TcpServer server = new TcpServer(ServerAddress.info().getPort());
-        ClientService client = new ClientService();
-
-        client.init();
-
-        System.out.println("[Client] connect will timeout in 1 sec");
-        connected = client.connect(ServerAddress.info());
-        System.out.println("connect() returns = " + connected);
-
-        System.out.println("[Client] connect will timeout in 5 sec");
-        connected = client.connect(ServerAddress.info());
-        System.out.println("connect() returns = " + connected);
-
-        System.out.println("[Client] connect will timeout in 10 sec");
-        connected = client.connect(ServerAddress.info());
-        System.out.println("connect() returns = " + connected);
-
-        System.out.println("[Client] connectUntilSuccess");
-        client.connectUntilSuccess(ServerAddress.info());
-
-        System.out.println("[Server] server starts");
-        server.start();
-
-        Thread.sleep(10000);
-
-        server.shutdown();
-        client.disconnect();
-    }
-
-    @Test
     @DisplayName("자동 복구 코드 동작 중 사용자 연결 시도")
     @SneakyThrows
     void userConnectInRecovery() {
