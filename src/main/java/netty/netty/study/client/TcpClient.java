@@ -78,9 +78,7 @@ public class TcpClient implements InactiveListener {
      * connect() 메쏘드는 호출 쓰레드와 동기화되어 수행됩니다.
      *
      * @param connectionTag 연결 정보
-     * @return
-     * true : connection success
-     * false : fail
+     * @return return true if connection success
      */
     public boolean connect(ConnectionTag connectionTag) {
         this.connectionTag = connectionTag;
@@ -121,9 +119,7 @@ public class TcpClient implements InactiveListener {
      * connect()와 connectUntilSuccess() 메쏘드에서 서버와 연결을 (한번) 시도하는 공용 코드를 구현합니다.
      *
      * @param connectionTag 연결 정보
-     * @return
-     * true : connection success
-     * false : fail
+     * @return return true if connection success
      */
     private synchronized boolean connectOnce(ConnectionTag connectionTag) {
         ChannelFuture channelFuture = null;
@@ -140,7 +136,7 @@ public class TcpClient implements InactiveListener {
 
         channel = channelFuture.channel();
 
-        channel.pipeline().addLast(new ChannelExceptionHandler((InactiveListener) this));
+        channel.pipeline().addLast(new ChannelExceptionHandler(this));
         return true;
     }
 
