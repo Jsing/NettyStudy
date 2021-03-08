@@ -27,8 +27,9 @@ import java.util.concurrent.TimeUnit;
  * 4. 연결 자동 복구
  * - TcpClient 는 InactiveListener 인터페이스를 구현합니다.
  * - 채널 파이프라인에 포함된 특정 ChannelInboundHandler 에서 inactive 이벤트를 발생 시, TcpClient에서 구현한 channelInactiveOccurred
- *   Listener 함수를 호출해 주어야 합니다.
+ * Listener 함수를 호출해 주어야 합니다.
  * TODO : 예외 발생 시, 이벤트 로그를 Service Layer 에 전달하는 로직 추가
+ *
  * @author Jsing
  * @see InactiveListener
  */
@@ -77,8 +78,9 @@ public class TcpClient implements InactiveListener {
      * connect() 메쏘드는 호출 쓰레드와 동기화되어 수행됩니다.
      *
      * @param connectionTag 연결 정보
-     * @return true : connection success
-     *         false : fail
+     * @return
+     * true : connection success
+     * false : fail
      */
     public boolean connect(ConnectionTag connectionTag) {
         this.connectionTag = connectionTag;
@@ -119,8 +121,9 @@ public class TcpClient implements InactiveListener {
      * connect()와 connectUntilSuccess() 메쏘드에서 서버와 연결을 (한번) 시도하는 공용 코드를 구현합니다.
      *
      * @param connectionTag 연결 정보
-     * @return true : connection success
-     *         false : fail
+     * @return
+     * true : connection success
+     * false : fail
      */
     private synchronized boolean connectOnce(ConnectionTag connectionTag) {
         ChannelFuture channelFuture = null;
