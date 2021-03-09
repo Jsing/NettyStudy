@@ -10,6 +10,12 @@ public class ChannelExceptionHandler extends ChannelInboundHandlerAdapter {
     final private ChannelStatusListener channelStatusListener;
 
     @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        channelStatusListener.channelActive();
+        super.channelActive(ctx);
+    }
+
+    @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         channelStatusListener.channelInactive();
         super.channelInactive(ctx);
@@ -17,7 +23,8 @@ public class ChannelExceptionHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        ctx.close();
+        channelStatusListener.exceptionCaught();
+        ctx.close(); // TODO 여기서 하는 것이 옳은지 검토해 보세요.
         super.exceptionCaught(ctx, cause);
     }
 }

@@ -5,6 +5,7 @@ public interface ChannelStatusListener {
      * 채널 Active 이벤트 발생
      */
     void channelActive();
+
     /**
      * 채널 Inactive 이벤트 발생
      */
