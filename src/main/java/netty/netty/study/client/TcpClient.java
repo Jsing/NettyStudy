@@ -7,9 +7,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
-import netty.netty.study.client.handler.ChannelExceptionHandler;
+import netty.netty.study.client.handler.ChannelStatusMonitor;
 import netty.netty.study.data.ConnectionTag;
-import netty.netty.study.utils.StackTraceUtils;
 import org.springframework.util.Assert;
 
 import java.net.InetSocketAddress;
@@ -137,10 +136,9 @@ public class TcpClient implements ChannelStatusListener {
         }
 
         shouldRecoveryChannel = true;
-
         channel = channelFuture.channel();
 
-        channel.pipeline().addLast(new ChannelExceptionHandler(this));
+        channel.pipeline().addLast(new ChannelStatusMonitor(this));
         return true;
     }
 

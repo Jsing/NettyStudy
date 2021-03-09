@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import netty.netty.study.client.ChannelStatusListener;
 
 @AllArgsConstructor
-public class ChannelExceptionHandler extends ChannelInboundHandlerAdapter {
+public class ChannelStatusMonitor extends ChannelInboundHandlerAdapter {
     final private ChannelStatusListener channelStatusListener;
 
     @Override
