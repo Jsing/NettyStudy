@@ -3,15 +3,15 @@ package netty.netty.study.client.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.AllArgsConstructor;
-import netty.netty.study.client.InactiveListener;
+import netty.netty.study.client.ChannelStatusListener;
 
 @AllArgsConstructor
 public class ChannelExceptionHandler extends ChannelInboundHandlerAdapter {
-    final private InactiveListener inactiveListener;
+    final private ChannelStatusListener channelStatusListener;
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        inactiveListener.channelInactiveOccurred();
+        channelStatusListener.channelInactive();
         super.channelInactive(ctx);
     }
 

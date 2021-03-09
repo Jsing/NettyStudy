@@ -6,9 +6,11 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ScheduledFuture;
+import lombok.extern.slf4j.Slf4j;
 import netty.netty.study.client.handler.ChannelExceptionHandler;
 import netty.netty.study.data.ConnectionTag;
-import org.springframework.lang.Nullable;
+import netty.netty.study.utils.StackTraceUtils;
+import org.springframework.util.Assert;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -31,9 +33,10 @@ import java.util.concurrent.TimeUnit;
  * TODO : 예외 발생 시, 이벤트 로그를 Service Layer 에 전달하는 로직 추가
  *
  * @author Jsing
- * @see InactiveListener
+ * @see ChannelStatusListener
  */
-public class TcpClient implements InactiveListener {
+@Slf4j
+public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
     private Channel channel;
     private ConnectionTag connectionTag;
@@ -41,7 +44,7 @@ public class TcpClient implements InactiveListener {
      * 비동기적으로 EventLoop 쓰레드에 의해 수행되는 connectUntilSuccess() 태스크 수행을 취소할 수 있습니다.
      */
     private CountDownLatch cancelConnectUntilSuccess; // TODO : is this thread-safe???
-    private boolean shouldChannelRecovery = true;
+    private boolean shouldRecoveryChannel = true;
 
     /**
      * TcpClient 를 초기화 합니다. TcpClient 는 사용전 반드시 init() 함수를 통해 초기화되어야 합니다.
@@ -50,6 +53,8 @@ public class TcpClient implements InactiveListener {
      * @param channelInitializer Channel Pipeline 설정
      */
     public void init(ChannelInitializer<?> channelInitializer) {
+        Assert.isNull(bootstrap.config().group(), "TcpClient.init() must be called once!");
+
         final int connectTimeoutMillis = 3000;
         EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
 
@@ -69,7 +74,6 @@ public class TcpClient implements InactiveListener {
                 channel.eventLoop().shutdownGracefully().sync();
             }
         } catch (Exception e) {
-            // TODO :: 예외처리
             e.printStackTrace();
         }
     }
@@ -82,25 +86,22 @@ public class TcpClient implements InactiveListener {
      * @return return true if connection success
      */
     public boolean connect(ConnectionTag connectionTag) {
+        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("postConstruct"), "it must not be called from postConstruct()");
+        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "it must not be called from connect()");
+
         this.connectionTag = connectionTag;
-
         this.disconnect();
-
         return connectOnce(connectionTag);
     }
 
     /**
      * 서버와 연결에 성공할 때 까지 반복해서 연결을 시도합니다. 기존에 연결된 채널이 있으면 연결을 종료합니다.
      * connectUntilSuccess() 메쏘드의 연결 수행 동작은 EventLoop 쓰레드에서 비동기적으로 수행됩니다.
-     * connectUntilSuccess() 메쏘드는 EventLoop 쓰레드에 태스크를 할당하고 즉시 반환됩니다.
+     * connectUntilSuccess() 메쏘드는 EventLoop 쓰레드에 반복 연결 작업을 할당하고 즉시 반환됩니다.
      *
      * @param connectionTag 연결 정보
      */
     public void connectUntilSuccess(ConnectionTag connectionTag) {
-        this.connectionTag = connectionTag;
-
-        this.disconnect();
-
         cancelConnectUntilSuccess = new CountDownLatch(1);
         bootstrap.config().group().submit(() -> {
             boolean connected = false;
@@ -117,10 +118,10 @@ public class TcpClient implements InactiveListener {
     }
 
     /**
-     * connect()와 connectUntilSuccess() 메쏘드에서 서버와 연결을 (한번) 시도하는 공용 코드를 구현합니다.
+     * 서버와 한 번 연결을 시도하고 결과를 반환합니다.
      *
      * @param connectionTag 연결 정보
-     * @return return true if connection success
+     * @return true 연결 성공 시
      */
     private synchronized boolean connectOnce(ConnectionTag connectionTag) {
         ChannelFuture channelFuture = null;
@@ -135,7 +136,7 @@ public class TcpClient implements InactiveListener {
             return false;
         }
 
-        shouldChannelRecovery = true;
+        shouldRecoveryChannel = true;
 
         channel = channelFuture.channel();
 
@@ -148,7 +149,7 @@ public class TcpClient implements InactiveListener {
      * connectUntilSuccess()에 의해 비동기적으로 수행중인 연결 태스크가 살아 있으면 태스크를 종료합니다.
      */
     public void disconnect() {
-        shouldChannelRecovery = false; // 명시적으로 연결을 끊는 경우 연결 복구 로직 OFF
+        shouldRecoveryChannel = false; // 명시적으로 연결을 끊는 경우 연결 복구 로직 OFF
         try {
             if (cancelConnectUntilSuccess != null) {
                 cancelConnectUntilSuccess.countDown();
@@ -164,6 +165,12 @@ public class TcpClient implements InactiveListener {
         }
     }
 
+    // TODO : 전송 메시지에 대한 이벤트 로깅 여부 boolean 인자 받기
+    public ChannelFuture send(Object message) {
+        return channel.writeAndFlush(message);
+    }
+
+    // TODO : 전송 메시지에 대한 이벤트 로깅 여부 boolean 인자 받기
     public ChannelFuture sendSync(Object message) {
         ChannelFuture channelFuture = channel.writeAndFlush(message);
         try {
@@ -171,10 +178,6 @@ public class TcpClient implements InactiveListener {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return channel.writeAndFlush(message);
-    }
-
-    public ChannelFuture send(Object message) {
         return channel.writeAndFlush(message);
     }
 
@@ -193,7 +196,6 @@ public class TcpClient implements InactiveListener {
         return channel.isActive();
     }
 
-    @Nullable
     public InetSocketAddress getLocalAddress() {
         if (channel == null) {
             return null;
@@ -201,14 +203,21 @@ public class TcpClient implements InactiveListener {
         return (InetSocketAddress) channel.localAddress();
     }
 
-    /**
-     * 채널의 Inactive 이벤트 리스너를 구현합니다.
-     * 채널의 연결이 끊어지면 connectUntilSuccess() 메쏘드를 호출하여 연결 복구 태스크를 실행합니다.
-     */
     @Override
-    public void channelInactiveOccurred() {
-        if (shouldChannelRecovery) {
+    public void channelActive() {
+        // TODO : 연결에 대한 이벤트 메시지 처리하기
+    }
+
+    @Override
+    public void channelInactive() {
+        if (shouldRecoveryChannel) {
             connectUntilSuccess(this.connectionTag);
         }
+        // TODO : 연결에 대한 이벤트 메시지 처리하기
+    }
+
+    @Override
+    public void exceptionCaught() {
+        // TODO : 채널 예외에 대한 이벤트 메시지 처리하기
     }
 }

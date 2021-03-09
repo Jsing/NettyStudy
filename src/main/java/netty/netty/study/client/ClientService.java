@@ -15,7 +15,7 @@ public class ClientService {
 
     public void init() {
 
-        tcpClient.init(new ClientChannelInitializer(lastStatus, (InactiveListener)tcpClient));
+        tcpClient.init(new ClientChannelInitializer(lastStatus, (ChannelStatusListener)tcpClient));
     }
 
     public void end() {

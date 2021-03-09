@@ -82,53 +82,26 @@ public class ConnectTest {
         Assertions.assertEquals(testMessage, msgReceived);
     }
 
+    @Test
+    @DisplayName("notAllowedCaller-postConstruct()")
+    @SneakyThrows
+    void postConstruct() {
+        boolean connected = client.connect(ServerAddress.info());
+    }
+
+    @Test
+    @DisplayName("notAllowedCaller-connect()")
+    @SneakyThrows
+    void connect() {
+        boolean connected = client.connect(ServerAddress.info());
+    }
+
     @DisplayName("Server->Client")
     @SneakyThrows
     void serverToClientTransfer() {
         boolean connected = client.connect(ServerAddress.info());
         Assertions.assertEquals(true, connected);
     }
-
-    //@Test
-    // TODO : Today 테스트 필요
-    @DisplayName("1개 Bootstrap,EventLoop / N개의 Channel")
-    @SneakyThrows
-    void twoClientConnection() {
-
-    }
-
-
-
-//
-//
-//    @Test
-//    @DisplayName("연결 후 연결 끊기")
-//    @SneakyThrows
-//    void disconnectInActive() {
-//
-//        // Ready
-//        ClientWorker clientWorker = new ClientWorker();
-//        clientWorker.init();
-//
-//        boolean connected = clientWorker.connect(ServerAddress.getIp(), ServerAddress.getPort());
-//
-//        connected = clientWorker.isActive();
-//
-//        Assertions.assertEquals(true, connected);
-//
-//        // Do
-//        server.end();
-//
-//        // Then
-//        Thread.sleep(1000);
-//
-//        connected = clientWorker.isActive();
-//
-//        Assertions.assertEquals(false, connected);
-//
-//        // End
-//        clientWorker.disconnect();
-//    }
 
 
 }
