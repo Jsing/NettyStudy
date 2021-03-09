@@ -53,7 +53,7 @@ public class TcpClient implements ChannelStatusListener {
      * @param channelInitializer Channel Pipeline 설정
      */
     public void init(ChannelInitializer<?> channelInitializer) {
-        Assert.isNull(bootstrap.config().group(), "TcpClient.init() must be called once!");
+        Assert.isNull(bootstrap.config().group(), "you have to call this function in postConstruct()");
 
         final int connectTimeoutMillis = 3000;
         EventLoopGroup eventLoopGroup = new NioEventLoopGroup();

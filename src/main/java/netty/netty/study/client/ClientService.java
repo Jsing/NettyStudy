@@ -34,8 +34,8 @@ public class ClientService {
     }
 
     public boolean connect(ConnectionTag connectionTag) {
-        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("postConstruct"), "it must not be called from postConstruct()");
-        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "it must not be called from connect()");
+        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("postConstruct"), "you have to call connectUntilSuccess()");
+        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "you have to call connectUntilSuccess()");
 
          return tcpClient.connect(connectionTag);
     }
