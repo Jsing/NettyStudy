@@ -86,9 +86,6 @@ public class TcpClient implements ChannelStatusListener {
      * @return return true if connection success
      */
     public boolean connect(ConnectionTag connectionTag) {
-        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("postConstruct"), "it must not be called from postConstruct()");
-        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "it must not be called from connect()");
-
         this.connectionTag = connectionTag;
         this.disconnect();
         return connectOnce(connectionTag);
@@ -102,6 +99,9 @@ public class TcpClient implements ChannelStatusListener {
      * @param connectionTag 연결 정보
      */
     public void connectUntilSuccess(ConnectionTag connectionTag) {
+        this.connectionTag = connectionTag;
+        this.disconnect();
+
         cancelConnectUntilSuccess = new CountDownLatch(1);
         bootstrap.config().group().submit(() -> {
             boolean connected = false;
