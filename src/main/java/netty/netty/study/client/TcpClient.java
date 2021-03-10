@@ -55,7 +55,7 @@ public class TcpClient implements ChannelStatusListener {
         Assert.isNull(bootstrap.config().group(), "you have to call this function in postConstruct()");
 
         final int connectTimeoutMillis = 3000;
-        EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
+        EventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
 
         bootstrap.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
@@ -179,8 +179,8 @@ public class TcpClient implements ChannelStatusListener {
         return channel.writeAndFlush(message);
     }
 
-    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
-        return channel.eventLoop().scheduleAtFixedRate(command, initialDelay, period, unit);
+    public ScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+       return channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
     }
 
     public Future<?> submit(Runnable task) {
