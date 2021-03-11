@@ -4,14 +4,15 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
 import netty.netty.study.client.handler.ChannelStatusMonitor;
 import netty.netty.study.data.ConnectionTag;
+import netty.netty.study.utils.StackTraceUtils;
 import org.springframework.util.Assert;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -37,25 +38,17 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
+    private final CopyOnWriteArrayList<ScheduledFuture> taskFutures = new CopyOnWriteArrayList<>();
     private Channel channel;
     private ConnectionTag connectionTag;
-    /**
-     * 비동기적으로 EventLoop 쓰레드에 의해 수행되는 connectUntilSuccess() 태스크 수행을 취소할 수 있습니다.
-     */
     private CountDownLatch cancelConnectUntilSuccess; // TODO : is this thread-safe???
     private boolean shouldRecoveryChannel = true;
 
-    /**
-     * TcpClient 를 초기화 합니다. TcpClient 는 사용전 반드시 init() 함수를 통해 초기화되어야 합니다.
-     * init() 이 호출되면 EventLoopGroup 이 생성되어 EventLoop 쓰레드가 생성되고 이후 연결을 위한 bootstrap 설정을 수행합니다.
-     *
-     * @param channelInitializer Channel Pipeline 설정
-     */
     public void init(ChannelInitializer<?> channelInitializer) {
         Assert.isNull(bootstrap.config().group(), "you have to call this function in postConstruct()");
 
         final int connectTimeoutMillis = 3000;
-        EventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
+        EventLoopGroup eventLoopGroup = new NioEventLoopGroup(2);
 
         bootstrap.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
@@ -64,9 +57,6 @@ public class TcpClient implements ChannelStatusListener {
                 .handler(channelInitializer);
     }
 
-    /**
-     * TcpClient 에 할당된 자원을 해제합니다.
-     */
     public void destroy() {
         try {
             if (channel != null && channel.eventLoop() != null) {
@@ -77,32 +67,21 @@ public class TcpClient implements ChannelStatusListener {
         }
     }
 
-    /**
-     * 서버와 연결을 (한번) 시도하고 결과를 반환합니다. 기존에 연결된 채널이 있으면 연결을 종료합니다.
-     * connect() 메쏘드는 호출 쓰레드와 동기화되어 수행됩니다.
-     *
-     * @param connectionTag 연결 정보
-     * @return return true if connection success
-     */
     public boolean connect(ConnectionTag connectionTag) {
+        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("postConstruct"), "you have to call connectUntilSuccess()");
+        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "you have to call connectUntilSuccess()");
+
         this.connectionTag = connectionTag;
         this.disconnect();
         return connectOnce(connectionTag);
     }
 
-    /**
-     * 서버와 연결에 성공할 때 까지 반복해서 연결을 시도합니다. 기존에 연결된 채널이 있으면 연결을 종료합니다.
-     * connectUntilSuccess() 메쏘드의 연결 수행 동작은 EventLoop 쓰레드에서 비동기적으로 수행됩니다.
-     * connectUntilSuccess() 메쏘드는 EventLoop 쓰레드에 반복 연결 작업을 할당하고 즉시 반환됩니다.
-     *
-     * @param connectionTag 연결 정보
-     */
     public void connectUntilSuccess(ConnectionTag connectionTag) {
         this.connectionTag = connectionTag;
         this.disconnect();
 
         cancelConnectUntilSuccess = new CountDownLatch(1);
-        bootstrap.config().group().submit(() -> {
+        bootstrap.config().group().schedule(() -> {
             boolean connected = false;
             do {
                 if (cancelConnectUntilSuccess.await(100, TimeUnit.MILLISECONDS)) {
@@ -111,17 +90,16 @@ public class TcpClient implements ChannelStatusListener {
                 connected = connectOnce(connectionTag);
             } while (!connected);
             cancelConnectUntilSuccess.countDown();
-            cancelConnectUntilSuccess = null;
             return null;
-        });
+        }, 0, TimeUnit.MILLISECONDS);
+
+        try {
+            cancelConnectUntilSuccess.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    /**
-     * 서버와 한 번 연결을 시도하고 결과를 반환합니다.
-     *
-     * @param connectionTag 연결 정보
-     * @return true 연결 성공 시
-     */
     private synchronized boolean connectOnce(ConnectionTag connectionTag) {
         ChannelFuture channelFuture = null;
         try {
@@ -142,16 +120,16 @@ public class TcpClient implements ChannelStatusListener {
         return true;
     }
 
-    /**
-     * 서버와 연결을 끊습니다.
-     * connectUntilSuccess()에 의해 비동기적으로 수행중인 연결 태스크가 살아 있으면 태스크를 종료합니다.
-     */
     public void disconnect() {
         shouldRecoveryChannel = false; // 명시적으로 연결을 끊는 경우 연결 복구 로직 OFF
         try {
-            if (cancelConnectUntilSuccess != null) {
+            if (cancelConnectUntilSuccess != null && cancelConnectUntilSuccess.getCount() != 0) {
                 cancelConnectUntilSuccess.countDown();
-                cancelConnectUntilSuccess = null;
+            }
+
+            if (!taskFutures.isEmpty()) {
+                taskFutures.forEach((future) -> future.cancel(true));
+                taskFutures.clear();
             }
 
             if (channel != null) {
@@ -163,13 +141,13 @@ public class TcpClient implements ChannelStatusListener {
         }
     }
 
-    // TODO : 전송 메시지에 대한 이벤트 로깅 여부 boolean 인자 받기
     public ChannelFuture send(Object message) {
+        Assert.notNull(channel, "channel must be not null");
         return channel.writeAndFlush(message);
     }
 
-    // TODO : 전송 메시지에 대한 이벤트 로깅 여부 boolean 인자 받기
     public ChannelFuture sendSync(Object message) {
+        Assert.notNull(channel, "channel must be not null");
         ChannelFuture channelFuture = channel.writeAndFlush(message);
         try {
             channelFuture.await();
@@ -179,12 +157,9 @@ public class TcpClient implements ChannelStatusListener {
         return channel.writeAndFlush(message);
     }
 
-    public ScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
-       return channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
-    }
-
-    public Future<?> submit(Runnable task) {
-        return channel.eventLoop().submit(task);
+    public void scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        ScheduledFuture future = channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
+        taskFutures.add(future);
     }
 
     public boolean isActive() {

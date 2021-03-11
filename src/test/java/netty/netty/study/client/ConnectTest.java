@@ -8,6 +8,8 @@ import netty.netty.study.server.TcpServer;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.concurrent.TimeUnit;
+
 @SpringBootTest
 @DisplayName("연결")
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
@@ -94,6 +96,43 @@ public class ConnectTest {
     @SneakyThrows
     void connect() {
         boolean connected = client.connect(ServerAddress.info());
+    }
+
+    @Test
+    @DisplayName("Study Netty Thread Model")
+    @SneakyThrows
+    void studyNettyThreadModel() {
+        System.out.println("connectUntilSuccess() --------------------------- ");
+        client.connectUntilSuccess(ServerAddress.info());
+        Thread.sleep(1000);
+
+        System.out.println("scheduleAtFixedRate(1) --------------------------- ");
+        client.scheduleAtFixedRate( () -> {
+            client.send("1 =" + Thread.currentThread().toString());
+            System.out.println("1 =" + Thread.currentThread().toString());
+        }, 1000, 1000, TimeUnit.MILLISECONDS);
+        Thread.sleep(4000);
+
+        System.out.println("disconnect() --------------------------- ");
+        client.disconnect();
+        Thread.sleep(4000);
+
+        System.out.println("connectUntilSuccess() --------------------------- ");
+        client.connectUntilSuccess(ServerAddress.info());
+        Thread.sleep(4000);
+
+        System.out.println("scheduleAtFixedRate(2) --------------------------- ");
+        client.scheduleAtFixedRate( () -> {
+            //client.send("2 =" + Thread.currentThread().toString());
+            System.out.println("2 =" + Thread.currentThread().toString());
+        }, 1000, 1000, TimeUnit.MILLISECONDS);
+        Thread.sleep(4000);
+
+        System.out.println("disconnect() --------------------------- ");
+        client.disconnect();
+        Thread.sleep(4000);
+
+
     }
 
     @DisplayName("Server->Client")

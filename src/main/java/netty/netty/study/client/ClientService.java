@@ -1,13 +1,13 @@
 package netty.netty.study.client;
 
+import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
 import netty.netty.study.client.initializer.ClientChannelInitializer;
 import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.data.LastStatus;
-import netty.netty.study.utils.StackTraceUtils;
-import org.springframework.util.Assert;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ClientService {
@@ -34,15 +34,17 @@ public class ClientService {
     }
 
     public boolean connect(ConnectionTag connectionTag) {
-        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("postConstruct"), "you have to call connectUntilSuccess()");
-        Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "you have to call connectUntilSuccess()");
-
          return tcpClient.connect(connectionTag);
     }
 
     public void disconnect() {
 
         tcpClient.disconnect();
+    }
+
+
+    public void scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        tcpClient.scheduleAtFixedRate(task, initialDelay, period, unit);
     }
 
     public void send(Object msg) {
