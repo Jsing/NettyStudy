@@ -15,31 +15,16 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.*;
 
 /**
- * Netty 기반의 TCP Client 서비스를 제공합니다. TcpClient 는 Netty 종속적인 대부분의 구현을 캡슐화합니다.
- * 1. 초기화
- * - TcpClient 는 응용 계층 프로토콜에 따라서 적절한 채널 파이프라인 설정이 필요합니다.
- * - 이를 위해 반드시 적절한 ChannelInitializer 와 함께 init()함수를 호출하여 TcpClient 초기화를 수행해야 합니다.
- * 2. 연결
- * - 동기화 메쏘드 connect() 함수를 통해서 한 번의 연결 시도를 수행할 수 있습니다.
- * - 비동기 메쏘드 connectUntilSuccess() 함수를 통해서 연결이 성공할 때 까지 연결을 시도하는 태스크를 실행할 수 있습니다.
- * 3. 종료
- * - TcpClient 사용 이후 반드시 destroy() 함수를 호출하여 안전하게 자원을 해제해야 합니다.
- * 4. 연결 자동 복구
- * - TcpClient 는 InactiveListener 인터페이스를 구현합니다.
- * - 채널 파이프라인에 포함된 특정 ChannelInboundHandler 에서 inactive 이벤트를 발생 시, TcpClient 에서 구현한 channelInactiveOccurred
- * Listener 함수를 호출해 주어야 합니다.
- *
- * @author Jsing
- * @see ChannelStatusListener
+ * Netty Tcp Client 기능을 제공합니다.
  */
 @Slf4j
 public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
+    private final ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
     private final CopyOnWriteArrayList<ScheduledFuture<?>> userTaskFutures = new CopyOnWriteArrayList<>();
     private Channel channel;
     private ConnectionTag connectionTag;
     private boolean shouldRecoverConnect = true;
-    private ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
 
     public void init(ChannelInitializer<?> channelInitializer) {
         final int connectTimeoutMillis = 3000;
@@ -47,7 +32,7 @@ public class TcpClient implements ChannelStatusListener {
 
         Assert.isNull(bootstrap.config().group(), "you have to call this function in postConstruct()");
 
-        EventLoopGroup eventLoopGroup = new NioEventLoopGroup(); // TODO 추후 적절한 Thread 개수로 조정 필요
+        EventLoopGroup eventLoopGroup = new NioEventLoopGroup(nThreads);
 
         bootstrap.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
@@ -77,10 +62,10 @@ public class TcpClient implements ChannelStatusListener {
         return connectOnce(connectionTag);
     }
 
-    public boolean connectUntilSuccess(ConnectionTag connectionTag) {
+    public void connectUntilSuccess(ConnectionTag connectionTag) {
         this.connectionTag = connectionTag;
         this.disconnect();
-        return connectUntilSuccess.sync(connectionTag);
+        connectUntilSuccess.sync(connectionTag);
     }
 
     public Future<Void> beginConnectUntilSuccess(ConnectionTag connectionTag) {
@@ -90,7 +75,7 @@ public class TcpClient implements ChannelStatusListener {
     }
 
     private synchronized boolean connectOnce(ConnectionTag connectionTag) {
-        ChannelFuture channelFuture = null;
+        ChannelFuture channelFuture;
         try {
             channelFuture = bootstrap.connect(connectionTag.getIp(), connectionTag.getPort()).sync();
         } catch (Exception e) {
@@ -124,10 +109,18 @@ public class TcpClient implements ChannelStatusListener {
         }
     }
 
-    // TODO : 전송 메시지에 대한 이벤트 로깅 여부 boolean 인자 받기
     public ChannelFuture send(Object message) {
         Assert.notNull(channel, "channel must be not null");
         return channel.writeAndFlush(message);
+    }
+
+    public ChannelFuture send(Object message, boolean doEventLog) {
+        Assert.notNull(channel, "channel must be not null");
+        ChannelFuture future = channel.writeAndFlush(message);
+        if (doEventLog) {
+            //Messaging.info(connectionTag.getEquipmentId(), ((String) message).toString());
+        }
+        return future;
     }
 
     public void scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
@@ -137,9 +130,7 @@ public class TcpClient implements ChannelStatusListener {
 
     public void stopUserTasks() {
         if (!userTaskFutures.isEmpty()) {
-            userTaskFutures.forEach((future) -> {
-                future.cancel(true);
-            });
+            userTaskFutures.forEach(future -> future.cancel(true));
             userTaskFutures.clear();
         }
     }
@@ -176,22 +167,44 @@ public class TcpClient implements ChannelStatusListener {
         //Messaging.error(connectionTag.getEquipmentId(), cause.toString());
     }
 
+    /**
+     * 연결 성공할 때 까지 연결을 재시도하는 기능을 캡슐화합니다.
+     * Netty 에서 제공하는 EventLoop 를 통하여 실행 시, I/O 작업에 영향을 끼치는 동기 함수 사용에 제약이 생겨 별도의 전용 쓰레드로 처리합니다.
+     */
     public class ConnectUntilSuccess {
+        /**
+         * 연결 반복 실행
+         */
         private final ExecutorService executor = Executors.newSingleThreadExecutor();
+        /**
+         * 비동기 연결 반복 실행에 대한 Future 객체
+         */
         private Future<Void> future;
+        /**
+         * 연결 반복 실행 종료
+         */
         private CountDownLatch cancelEvent;
 
-        public boolean sync(ConnectionTag connectionTag) {
+        /**
+         * 연결 반복 실행 동기화 수행
+         *
+         * @param connectionTag 연결 정보
+         */
+        public void sync(ConnectionTag connectionTag) {
             future = begin(connectionTag);
             try {
                 future.get();
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
-                return false;
             }
-            return true;
         }
 
+        /**
+         * 연결 반복 실행 태스크 시작
+         *
+         * @param connectionTag
+         * @return 연결 반복 실행에 대한 Future 객체
+         */
         public Future<Void> begin(ConnectionTag connectionTag) {
             cancelEvent = new CountDownLatch(1);
             future = executor.submit(() -> {
@@ -208,6 +221,9 @@ public class TcpClient implements ChannelStatusListener {
             return future;
         }
 
+        /**
+         * 연결 반복 실행 종료
+         */
         public void stop() {
             if (cancelEvent != null && cancelEvent.getCount() != 0) {
                 cancelEvent.countDown();
