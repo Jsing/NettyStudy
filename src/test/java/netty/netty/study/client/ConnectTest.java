@@ -8,6 +8,7 @@ import netty.netty.study.server.TcpServer;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest
@@ -37,8 +38,10 @@ public class ConnectTest {
     @DisplayName("연결 성공")
     @SneakyThrows
     void connectionSuccess() throws Exception {
-        boolean connected = client.connect(ServerAddress.info());
-        Assertions.assertEquals(true, connected);
+        client.connectUntilSuccess(ServerAddress.info());
+
+        Thread.sleep(1000);
+        Assertions.assertEquals(true, client.isActive());
     }
 
     @Test
@@ -47,9 +50,8 @@ public class ConnectTest {
     void noServer() {
         final ConnectionTag connectionTag =  new ConnectionTag("172.30.12.1",
                 ServerAddress.info().getPort()-1);
-
-        boolean connected = client.connect(connectionTag);
-        Assertions.assertEquals(false, connected);
+        client.connectOnce(connectionTag);
+        Assertions.assertEquals(false, client.isActive());
     }
 
     @Test
@@ -58,9 +60,8 @@ public class ConnectTest {
     void noServerPort() {
         final ConnectionTag connectionTag =  new ConnectionTag(ServerAddress.info().getIp(),
                         ServerAddress.info().getPort()-1);
-
-        boolean connected = client.connect(connectionTag);
-        Assertions.assertEquals(false, connected);
+        client.connectOnce(connectionTag);
+        Assertions.assertEquals(false, client.isActive());
     }
 
     @Test
@@ -69,8 +70,8 @@ public class ConnectTest {
     void clientToServerTransfer() {
         String testMessage = "I am Jsing";
 
-        boolean connected = client.connect(ServerAddress.info());
-        Assertions.assertEquals(true, connected);
+        client.connectUntilSuccess(ServerAddress.info());
+        Assertions.assertEquals(true, client.isActive());
 
         Thread.sleep(100);
 
@@ -85,20 +86,6 @@ public class ConnectTest {
     }
 
     @Test
-    @DisplayName("notAllowedCaller-postConstruct()")
-    @SneakyThrows
-    void postConstruct() {
-        boolean connected = client.connect(ServerAddress.info());
-    }
-
-    @Test
-    @DisplayName("notAllowedCaller-connect()")
-    @SneakyThrows
-    void connect() {
-        boolean connected = client.connect(ServerAddress.info());
-    }
-
-    @Test
     @DisplayName("Study Netty Thread Model")
     @SneakyThrows
     void studyNettyThreadModel() {
@@ -108,29 +95,31 @@ public class ConnectTest {
 
         System.out.println("scheduleAtFixedRate(1) --------------------------- ");
         client.scheduleAtFixedRate( () -> {
-            client.send("1 =" + Thread.currentThread().toString());
-            System.out.println("1 =" + Thread.currentThread().toString());
-        }, 1000, 1000, TimeUnit.MILLISECONDS);
-        Thread.sleep(4000);
+            try {
+                System.out.println("1 =" + Thread.currentThread().toString());
+            } catch( CancellationException e) {
+                e.printStackTrace();
+            }
+        }, 0, 1000, TimeUnit.MILLISECONDS);
+        Thread.sleep(1000);
 
         System.out.println("disconnect() --------------------------- ");
         client.disconnect();
-        Thread.sleep(4000);
+        Thread.sleep(1000);
 
         System.out.println("connectUntilSuccess() --------------------------- ");
         client.connectUntilSuccess(ServerAddress.info());
-        Thread.sleep(4000);
+        Thread.sleep(1000);
 
         System.out.println("scheduleAtFixedRate(2) --------------------------- ");
         client.scheduleAtFixedRate( () -> {
-            //client.send("2 =" + Thread.currentThread().toString());
             System.out.println("2 =" + Thread.currentThread().toString());
-        }, 1000, 1000, TimeUnit.MILLISECONDS);
-        Thread.sleep(4000);
+        }, 0, 1000, TimeUnit.MILLISECONDS);
+        Thread.sleep(1000);
 
         System.out.println("disconnect() --------------------------- ");
         client.disconnect();
-        Thread.sleep(4000);
+        Thread.sleep(1000);
 
 
     }
@@ -138,8 +127,8 @@ public class ConnectTest {
     @DisplayName("Server->Client")
     @SneakyThrows
     void serverToClientTransfer() {
-        boolean connected = client.connect(ServerAddress.info());
-        Assertions.assertEquals(true, connected);
+        client.connectUntilSuccess(ServerAddress.info());
+        Assertions.assertEquals(true, client.isActive());
     }
 
 

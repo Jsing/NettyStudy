@@ -25,7 +25,7 @@ ExceptionalConnectTest {
         client.init();
 
         for (int i = 0; i < nRepeat; i++) {
-            boolean connected = client.connect(ServerAddress.info());
+            boolean connected = client.connectOnce(ServerAddress.info());
             Assertions.assertEquals(true, connected);
 
             String testMessage = testBaseMessage + String.valueOf(i);
@@ -56,20 +56,26 @@ ExceptionalConnectTest {
 
         client.init();
 
-        client.connectUntilSuccess(ServerAddress.info());
+        System.out.println("[Client] beginConnectUntilSuccess");
+        client.beginConnectUntilSuccess(ServerAddress.info());
 
-        Thread.sleep(10000);
+        System.out.println("[Client] sleep(5000)");
+        Thread.sleep(5000);
 
         Assertions.assertFalse(client.isActive());
 
+        System.out.println("[Server] start");
         server.start();
 
+        System.out.println("[Client] sleep(5000)");
         Thread.sleep(1000);
 
         Assertions.assertTrue(client.isActive());
 
+        System.out.println("[System] shutdown");
         server.shutdown();
         client.disconnect();
+
     }
 
     @Test
@@ -82,11 +88,11 @@ ExceptionalConnectTest {
         System.out.println("[Server] start");
         server.start();
 
-        System.out.println("[Client] connect");
+        System.out.println("[Client] beginConnectUntilSuccess");
         client.init();
-        client.connect(ServerAddress.info());
+        client.beginConnectUntilSuccess(ServerAddress.info());
 
-        System.out.println("[Client] sleep during 1sec");
+        System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);
 
         System.out.println("[Client] client.isActive() = " + client.isActive());
@@ -99,16 +105,16 @@ ExceptionalConnectTest {
         System.out.println("[Server] shutdown");
         server.shutdown();
 
-        System.out.println("[Client] sleep during 1sec");
+        System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);
 
         System.out.println("[Client] client.isActive() = " + client.isActive());
         Assertions.assertFalse(client.isActive());
 
-        System.out.println("[Server] restart");
+        System.out.println("[Server] server restart");
         server.start();
 
-        System.out.println("[Client] sleep during 5sec");
+        System.out.println("[Client] sleep(5000)");
         Thread.sleep(5000);
 
         System.out.println("[Client] client.isActive() = " + client.isActive());
@@ -118,11 +124,11 @@ ExceptionalConnectTest {
         transfer(server, client);
         Thread.sleep(1000);
 
-        System.out.println("[Server] shutdown");
-        server.shutdown();
-
         System.out.println("[Client] disconnect");
         client.disconnect();
+
+        System.out.println("[Server] shutdown");
+        server.shutdown();
     }
 
     @Test
@@ -134,19 +140,22 @@ ExceptionalConnectTest {
 
         client.init();
 
-        System.out.println("[Client] start connectUntilSuccess()");
-        client.connectUntilSuccess(ServerAddress.info());
+        System.out.println("[Client] beginConnectUntilSuccess()");
+        client.beginConnectUntilSuccess(ServerAddress.info());
 
+        System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);
 
-        System.out.println("[Client] cancel connectUntilSuccess()");
+        System.out.println("[Client] disconnect()");
         client.disconnect();
 
-        Thread.sleep(1200);
+        System.out.println("[Client] sleep(1000)");
+        Thread.sleep(1000);
 
         System.out.println("[Server] start()");
         server.start();
 
+        System.out.println("[Client] sleep(3000)");
         Thread.sleep(3000);
 
         System.out.println("[Client] Assertions.assertFalse(client.isActive()) = " + client.isActive());
@@ -155,16 +164,17 @@ ExceptionalConnectTest {
         System.out.println("[Client] start connectUntilSuccess()");
         client.connectUntilSuccess(ServerAddress.info());
 
+        System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);
 
         System.out.println("[Client] Assertions.assertTrue(client.isActive()) = " + client.isActive());
         Assertions.assertTrue(client.isActive());
 
-        System.out.println("[Server] shutdown");
-        server.shutdown();
-
         System.out.println("[Client] disconnect");
         client.disconnect();
+
+        System.out.println("[Server] shutdown");
+        server.shutdown();
     }
 
     @Test
@@ -178,14 +188,14 @@ ExceptionalConnectTest {
 
         client.init();
 
-        System.out.println("[Client] connect");
-        connected = client.connect(ServerAddress.info());
+        System.out.println("[Client] beginConnectUntilSuccess()");
+        client.beginConnectUntilSuccess(ServerAddress.info());
 
         System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);
 
-        System.out.println("[Client] connectUntilSuccess()");
-        client.connectUntilSuccess(ServerAddress.info());
+        System.out.println("[Client] connectOnce");
+        connected = client.connectOnce(ServerAddress.info());
 
         System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);
@@ -196,16 +206,18 @@ ExceptionalConnectTest {
         System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);
 
+        System.out.println("[Client] connect");
+        connected = client.connectOnce(ServerAddress.info());
+
         System.out.println("[Client] isActive() = " + client.isActive());
         Assertions.assertTrue(client.isActive());
 
         transfer(server, client);
 
+        Thread.sleep(3000);
 
-        Thread.sleep(10000);
-
-        server.shutdown();
         client.disconnect();
+        server.shutdown();
     }
 
     @Test
@@ -220,8 +232,8 @@ ExceptionalConnectTest {
         server.start();
         client.init();
 
-        System.out.println("[Client] connect");
-        connected = client.connect(ServerAddress.info());
+        System.out.println("[Client] beginConnectUntilSuccess");
+        client.beginConnectUntilSuccess(ServerAddress.info());
 
         System.out.println("[Client] sleep(1000)");
         Thread.sleep(1000);
@@ -232,13 +244,14 @@ ExceptionalConnectTest {
         System.out.println("[Client] disconnect explicitly");
         client.disconnect();
 
+        System.out.println("[Client] sleep(5000)");
         Thread.sleep(5000);
 
         System.out.println("[Client] isActive() = " + client.isActive());
         Assertions.assertFalse(client.isActive());
 
-        server.shutdown();
         client.disconnect();
+        server.shutdown();
     }
 
     @SneakyThrows

@@ -1,12 +1,12 @@
 package netty.netty.study.client;
 
-import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
 import netty.netty.study.client.initializer.ClientChannelInitializer;
 import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.data.LastStatus;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -33,15 +33,25 @@ public class ClientService {
         tcpClient.connectUntilSuccess(connectionTag);
     }
 
-    public boolean connect(ConnectionTag connectionTag) {
+    public Future beginConnectUntilSuccess(ConnectionTag connectionTag) {
+        return tcpClient.beginConnectUntilSuccess(connectionTag);
+    }
+
+    public boolean connectOnce(ConnectionTag connectionTag) {
          return tcpClient.connect(connectionTag);
     }
 
     public void disconnect() {
-
         tcpClient.disconnect();
     }
 
+    public void cancelUserTasks() {
+        tcpClient.stopUserTasks();
+    }
+
+    public void cancelRetryConnect() {
+        tcpClient.stopConnectUntilSuccess();
+    }
 
     public void scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
         tcpClient.scheduleAtFixedRate(task, initialDelay, period, unit);

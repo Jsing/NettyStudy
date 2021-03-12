@@ -4,7 +4,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
 import netty.netty.study.client.handler.ChannelStatusMonitor;
 import netty.netty.study.data.ConnectionTag;
@@ -12,9 +11,7 @@ import netty.netty.study.utils.StackTraceUtils;
 import org.springframework.util.Assert;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Netty 기반의 TCP Client 서비스를 제공합니다. TcpClient 는 Netty 종속적인 대부분의 구현을 캡슐화합니다.
@@ -28,9 +25,8 @@ import java.util.concurrent.TimeUnit;
  * - TcpClient 사용 이후 반드시 destroy() 함수를 호출하여 안전하게 자원을 해제해야 합니다.
  * 4. 연결 자동 복구
  * - TcpClient 는 InactiveListener 인터페이스를 구현합니다.
- * - 채널 파이프라인에 포함된 특정 ChannelInboundHandler 에서 inactive 이벤트를 발생 시, TcpClient에서 구현한 channelInactiveOccurred
+ * - 채널 파이프라인에 포함된 특정 ChannelInboundHandler 에서 inactive 이벤트를 발생 시, TcpClient 에서 구현한 channelInactiveOccurred
  * Listener 함수를 호출해 주어야 합니다.
- * TODO : 예외 발생 시, 이벤트 로그를 Service Layer 에 전달하는 로직 추가
  *
  * @author Jsing
  * @see ChannelStatusListener
@@ -38,17 +34,21 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
-    private final CopyOnWriteArrayList<ScheduledFuture> taskFutures = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<ScheduledFuture<?>> userTaskFutures = new CopyOnWriteArrayList<>();
+    private final ExecutorService executorConnectUntilSuccess = Executors.newSingleThreadExecutor();
+    private Future<?> connectUntilSuccessFuture;
     private Channel channel;
     private ConnectionTag connectionTag;
-    private CountDownLatch cancelConnectUntilSuccess; // TODO : is this thread-safe???
-    private boolean shouldRecoveryChannel = true;
+    private CountDownLatch cancelConnectUntilSuccess;
+    private boolean shouldRecoverConnect = true;
 
     public void init(ChannelInitializer<?> channelInitializer) {
+        final int connectTimeoutMillis = 3000;
+        final int nThreads = 2;
+
         Assert.isNull(bootstrap.config().group(), "you have to call this function in postConstruct()");
 
-        final int connectTimeoutMillis = 3000;
-        EventLoopGroup eventLoopGroup = new NioEventLoopGroup(2);
+        EventLoopGroup eventLoopGroup = new NioEventLoopGroup(); // TODO 추후 적절한 Thread 개수로 조정 필요
 
         bootstrap.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
@@ -62,6 +62,8 @@ public class TcpClient implements ChannelStatusListener {
             if (channel != null && channel.eventLoop() != null) {
                 channel.eventLoop().shutdownGracefully().sync();
             }
+            stopConnectUntilSuccess();
+            stopUserTasks();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -76,27 +78,45 @@ public class TcpClient implements ChannelStatusListener {
         return connectOnce(connectionTag);
     }
 
-    public void connectUntilSuccess(ConnectionTag connectionTag) {
+    public boolean connectUntilSuccess(ConnectionTag connectionTag) {
+        connectUntilSuccessFuture = beginConnectUntilSuccess(connectionTag);
+        try {
+            connectUntilSuccessFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    public Future beginConnectUntilSuccess(ConnectionTag connectionTag) {
         this.connectionTag = connectionTag;
         this.disconnect();
 
         cancelConnectUntilSuccess = new CountDownLatch(1);
-        bootstrap.config().group().schedule(() -> {
-            boolean connected = false;
+        connectUntilSuccessFuture = executorConnectUntilSuccess.submit(() -> {
+            boolean connected;
             do {
                 if (cancelConnectUntilSuccess.await(100, TimeUnit.MILLISECONDS)) {
                     break;
                 }
+                System.out.println("ConnectUntilSuccess Task : connectOnce() before");
                 connected = connectOnce(connectionTag);
             } while (!connected);
             cancelConnectUntilSuccess.countDown();
             return null;
-        }, 0, TimeUnit.MILLISECONDS);
+        });
+        return connectUntilSuccessFuture;
+    }
 
-        try {
-            cancelConnectUntilSuccess.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+    public void stopConnectUntilSuccess() {
+        if (cancelConnectUntilSuccess != null && cancelConnectUntilSuccess.getCount() != 0) {
+            cancelConnectUntilSuccess.countDown();
+            try {
+                connectUntilSuccessFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -113,7 +133,7 @@ public class TcpClient implements ChannelStatusListener {
             return false;
         }
 
-        shouldRecoveryChannel = true;
+        shouldRecoverConnect = true;
         channel = channelFuture.channel();
 
         channel.pipeline().addLast(new ChannelStatusMonitor(this));
@@ -121,18 +141,12 @@ public class TcpClient implements ChannelStatusListener {
     }
 
     public void disconnect() {
-        shouldRecoveryChannel = false; // 명시적으로 연결을 끊는 경우 연결 복구 로직 OFF
+        shouldRecoverConnect = false; // 명시적으로 연결을 끊는 경우 연결 복구 로직 OFF
         try {
-            if (cancelConnectUntilSuccess != null && cancelConnectUntilSuccess.getCount() != 0) {
-                cancelConnectUntilSuccess.countDown();
-            }
-
-            if (!taskFutures.isEmpty()) {
-                taskFutures.forEach((future) -> future.cancel(true));
-                taskFutures.clear();
-            }
-
+            stopConnectUntilSuccess();
+            stopUserTasks();
             if (channel != null) {
+                channel.pipeline().remove(ChannelStatusMonitor.class);
                 channel.close().sync();
                 channel = null;
             }
@@ -158,8 +172,17 @@ public class TcpClient implements ChannelStatusListener {
     }
 
     public void scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
-        ScheduledFuture future = channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
-        taskFutures.add(future);
+        ScheduledFuture<?> future = channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
+        userTaskFutures.add(future);
+    }
+
+    public void stopUserTasks() {
+        if (!userTaskFutures.isEmpty()) {
+            userTaskFutures.forEach((future) -> {
+                future.cancel(true);
+            });
+            userTaskFutures.clear();
+        }
     }
 
     public boolean isActive() {
@@ -178,19 +201,19 @@ public class TcpClient implements ChannelStatusListener {
 
     @Override
     public void channelActive() {
-        // TODO : 연결에 대한 이벤트 메시지 처리하기
+        System.out.println("[Client] channelActive");
     }
 
     @Override
     public void channelInactive() {
-        if (shouldRecoveryChannel) {
-            connectUntilSuccess(this.connectionTag);
+        if (shouldRecoverConnect) {
+            beginConnectUntilSuccess(this.connectionTag);
         }
-        // TODO : 연결에 대한 이벤트 메시지 처리하기
+        System.out.println("[Client] channelInactive");
     }
 
     @Override
     public void exceptionCaught() {
-        // TODO : 채널 예외에 대한 이벤트 메시지 처리하기
+        System.out.println("[Client] exceptionCaught");
     }
 }
