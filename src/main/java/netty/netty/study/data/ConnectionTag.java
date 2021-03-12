@@ -5,6 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 public class ConnectionTag {
+    private final Integer equipmentId;
     private final String ip;
     private final Integer port;
 
@@ -14,5 +15,9 @@ public class ConnectionTag {
 
     public int getPort() {
         return port;
+    }
+
+    public int getEquipmentId() {
+        return equipmentId;
     }
 }

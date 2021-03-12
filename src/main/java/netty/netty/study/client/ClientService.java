@@ -45,14 +45,6 @@ public class ClientService {
         tcpClient.disconnect();
     }
 
-    public void cancelUserTasks() {
-        tcpClient.stopUserTasks();
-    }
-
-    public void cancelRetryConnect() {
-        tcpClient.stopConnectUntilSuccess();
-    }
-
     public void scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
         tcpClient.scheduleAtFixedRate(task, initialDelay, period, unit);
     }

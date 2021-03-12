@@ -14,5 +14,5 @@ public interface ChannelStatusListener {
     /**
      * 채널 Exception 이벤트 발생
      */
-    void exceptionCaught();
+    void exceptionCaught(Throwable cause);
 }

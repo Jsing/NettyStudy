@@ -73,8 +73,8 @@ ExceptionalConnectTest {
         Assertions.assertTrue(client.isActive());
 
         System.out.println("[System] shutdown");
-        server.shutdown();
         client.disconnect();
+        server.shutdown();
 
     }
 

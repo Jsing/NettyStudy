@@ -23,7 +23,7 @@ public class ChannelStatusMonitor extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        channelStatusListener.exceptionCaught();
+        channelStatusListener.exceptionCaught(cause);
         ctx.close(); // TODO 여기서 하는 것이 옳은지 검토해 보세요.
         super.exceptionCaught(ctx, cause);
     }
