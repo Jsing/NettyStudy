@@ -48,8 +48,8 @@ public class ConnectTest {
     @DisplayName("원격 서버 없음")
     @SneakyThrows
     void noServer() {
-        final ConnectionTag connectionTag =  new ConnectionTag("172.30.12.1",
-                ServerAddress.info().getPort()-1);
+        final ConnectionTag connectionTag = new ConnectionTag(0, "172.30.12.1",
+                ServerAddress.info().getPort() - 1);
         client.connectOnce(connectionTag);
         Assertions.assertEquals(false, client.isActive());
     }
@@ -58,8 +58,8 @@ public class ConnectTest {
     @DisplayName("원격 서버 포트 없음")
     @SneakyThrows
     void noServerPort() {
-        final ConnectionTag connectionTag =  new ConnectionTag(ServerAddress.info().getIp(),
-                        ServerAddress.info().getPort()-1);
+        final ConnectionTag connectionTag = new ConnectionTag(0, ServerAddress.info().getIp(),
+                ServerAddress.info().getPort() - 1);
         client.connectOnce(connectionTag);
         Assertions.assertEquals(false, client.isActive());
     }
@@ -94,10 +94,11 @@ public class ConnectTest {
         Thread.sleep(1000);
 
         System.out.println("scheduleAtFixedRate(1) --------------------------- ");
-        client.scheduleAtFixedRate( () -> {
+        client.scheduleAtFixedRate(() -> {
             try {
+                client.send("1");
                 System.out.println("1 =" + Thread.currentThread().toString());
-            } catch( CancellationException e) {
+            } catch (CancellationException e) {
                 e.printStackTrace();
             }
         }, 0, 1000, TimeUnit.MILLISECONDS);
@@ -112,7 +113,8 @@ public class ConnectTest {
         Thread.sleep(1000);
 
         System.out.println("scheduleAtFixedRate(2) --------------------------- ");
-        client.scheduleAtFixedRate( () -> {
+        client.scheduleAtFixedRate(() -> {
+            client.send("2");
             System.out.println("2 =" + Thread.currentThread().toString());
         }, 0, 1000, TimeUnit.MILLISECONDS);
         Thread.sleep(1000);
