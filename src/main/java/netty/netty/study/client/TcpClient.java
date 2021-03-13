@@ -18,7 +18,6 @@ import java.util.concurrent.*;
 /**
  * Netty Tcp Client 기능을 제공합니다.
  */
-@Slf4j
 public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
     private final ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
