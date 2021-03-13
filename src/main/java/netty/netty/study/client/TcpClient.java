@@ -48,7 +48,7 @@ public class TcpClient implements ChannelStatusListener {
                 channel.eventLoop().shutdownGracefully().sync();
             }
             connectUntilSuccess.stop();
-            stopUserTasks();
+            userTask.stop();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -205,7 +205,7 @@ public class TcpClient implements ChannelStatusListener {
         /**
          * 연결 반복 실행
          */
-        private final ExecutorService executor = Executors.newSingleThreadExecutor();
+        private final ExecutorService executor = Executors.newSingleThreadExecutor(); // TODO 종료 안시켜주나?
         /**
          * 비동기 연결 반복 실행에 대한 Future 객체
          */
