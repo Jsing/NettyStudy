@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
     private final ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
-    private final CopyOnWriteArrayList<ScheduledFuture<?>> userTaskFutures = new CopyOnWriteArrayList<>();
+    private final UserTask userTask = new UserTask();
     private Channel channel;
     private ConnectionTag connectionTag;
     private boolean shouldRecoverConnect = true;
@@ -134,22 +134,13 @@ public class TcpClient implements ChannelStatusListener {
         return result;
     }
 
-    // TODO startUserTask() 이름 변경
+    // TODO beginUserTask() 이름 변경
     public boolean scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
-        if (channel == null) {
-            // log something...
-            return false;
-        }
-        ScheduledFuture<?> future = channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
-        userTaskFutures.add(future);
-        return true;
+        return userTask.begin(task, initialDelay, period, unit);
     }
 
     public void stopUserTasks() {
-        if (!userTaskFutures.isEmpty()) {
-            userTaskFutures.forEach(future -> future.cancel(true));
-            userTaskFutures.clear();
-        }
+        userTask.stop();
     }
 
     public boolean isActive() {
@@ -184,11 +175,33 @@ public class TcpClient implements ChannelStatusListener {
         //Messaging.error(connectionTag.getEquipmentId(), cause.toString());
     }
 
+    private class UserTask {
+        private final CopyOnWriteArrayList<ScheduledFuture<?>> userTaskFutures = new CopyOnWriteArrayList<>();
+
+        // TODO startUserTask() 이름 변경
+        public boolean begin(Runnable task, long initialDelay, long period, TimeUnit unit) {
+            if (channel == null) {
+                // log something...
+                return false;
+            }
+            ScheduledFuture<?> future = channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
+            userTaskFutures.add(future);
+            return true;
+        }
+
+        public void stop() {
+            if (!userTaskFutures.isEmpty()) {
+                userTaskFutures.forEach(future -> future.cancel(true));
+                userTaskFutures.clear();
+            }
+        }
+    }
+
     /**
      * 연결 성공할 때 까지 연결을 재시도하는 기능을 캡슐화합니다.
      * Netty 에서 제공하는 EventLoop 를 통하여 실행 시, I/O 작업에 영향을 끼치는 동기 함수 사용에 제약이 생겨 별도의 전용 쓰레드로 처리합니다.
      */
-    public class ConnectUntilSuccess {
+    private class ConnectUntilSuccess {
         /**
          * 연결 반복 실행
          */
