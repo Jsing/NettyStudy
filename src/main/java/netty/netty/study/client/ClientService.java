@@ -45,12 +45,12 @@ public class ClientService {
         tcpClient.disconnect();
     }
 
-    public void scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
-        tcpClient.scheduleAtFixedRate(task, initialDelay, period, unit);
+    public boolean scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        return tcpClient.scheduleAtFixedRate(task, initialDelay, period, unit);
     }
 
-    public void send(Object msg) {
-        tcpClient.send(msg);
+    public boolean send(Object msg) {
+        return tcpClient.send(msg);
     }
 
     public boolean isActive() {

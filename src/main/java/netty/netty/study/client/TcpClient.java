@@ -9,6 +9,7 @@ import netty.netty.study.client.handler.ChannelStatusMonitor;
 import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.data.Messaging;
 import netty.netty.study.utils.StackTraceUtils;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import java.net.InetSocketAddress;
@@ -26,6 +27,7 @@ public class TcpClient implements ChannelStatusListener {
     private ConnectionTag connectionTag;
     private boolean shouldRecoverConnect = true;
 
+    // TODO : 꼭 한 번만 수행되어야 한다면 생성자로 옮기는 방향 검토!
     public void init(ChannelInitializer<?> channelInitializer) {
         final int connectTimeoutMillis = 3000;
         final int nThreads = 2;
@@ -109,23 +111,39 @@ public class TcpClient implements ChannelStatusListener {
         }
     }
 
-    public ChannelFuture send(Object message) {
-        Assert.notNull(channel, "channel must be not null");
-        return channel.writeAndFlush(message);
-    }
-
-    public ChannelFuture send(Object message, boolean doEventLog) {
-        Assert.notNull(channel, "channel must be not null");
-        ChannelFuture future = channel.writeAndFlush(message);
-        if (doEventLog) {
-            //Messaging.info(connectionTag.getEquipmentId(), ((String) message).toString());
+    public boolean send(Object message) {
+        if (channel == null) {
+            // log something...
+            return false;
         }
-        return future;
+        ChannelFuture future = channel.writeAndFlush(message);
+        try {
+            future.sync();
+        } catch (Exception e) {
+            e.printStackTrace();
+            // log something...
+            return false;
+        }
+        return true;
     }
 
-    public void scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+    public boolean send(Object message, boolean doLog) {
+        boolean result = send(message);
+        if (doLog) {
+            // log something...
+        }
+        return result;
+    }
+
+    // TODO startUserTask() 이름 변경
+    public boolean scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        if (channel == null) {
+            // log something...
+            return false;
+        }
         ScheduledFuture<?> future = channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
         userTaskFutures.add(future);
+        return true;
     }
 
     public void stopUserTasks() {
@@ -204,6 +222,7 @@ public class TcpClient implements ChannelStatusListener {
          *
          * @param connectionTag
          * @return 연결 반복 실행에 대한 Future 객체
+         * @see TcpClient.connectOnce()
          */
         public Future<Void> begin(ConnectionTag connectionTag) {
             cancelEvent = new CountDownLatch(1);
@@ -213,7 +232,7 @@ public class TcpClient implements ChannelStatusListener {
                     if (cancelEvent.await(100, TimeUnit.MILLISECONDS)) {
                         break;
                     }
-                    connected = connectOnce(connectionTag);
+                    connected = TcpClient.this.connectOnce(connectionTag);
                 } while (!connected);
                 cancelEvent.countDown();
                 return null; // TODO 이건 뭘 의미하는 거지?

@@ -254,16 +254,58 @@ ExceptionalConnectTest {
         server.shutdown();
     }
 
+    @Test
+    @DisplayName("Send Before Connection")
+    @SneakyThrows
+    void sendBeforeConnection() {
+        boolean connected = false;
+
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
+        ClientService client = new ClientService();
+        client.init();
+
+        System.out.println("[Client] beginConnectUntilSuccess");
+        client.beginConnectUntilSuccess(ServerAddress.info());
+
+        System.out.println("[Client] sleep(1000)");
+        Thread.sleep(1000);
+
+        System.out.println("[Client] send() before connection");
+        boolean result = client.send("TEST");
+
+        System.out.println("[Client] send() results = " + result);
+        Assertions.assertFalse(result);
+
+        System.out.println("[Sever] start");
+        server.start();
+
+        System.out.println("[Client] sleep(1000)");
+        Thread.sleep(1000);
+
+        System.out.println("[Client] isActive() = " + client.isActive());
+        Assertions.assertTrue(client.isActive());
+
+        System.out.println("[Client] send() after connection");
+        result = client.send("TEST");
+
+        System.out.println("[Client] send() results = " + result);
+        Assertions.assertTrue(result);
+
+        client.disconnect();
+        server.shutdown();
+    }
+
     @SneakyThrows
     void transfer(TcpServer server, ClientService client) {
         final String testBaseMessage = "Hello I am Jsing";
+        boolean result;
 
         String testMessage = testBaseMessage;
 
         Thread.sleep(30);
 
         System.out.println("[Client] send() = " + testMessage);
-        client.send(testMessage);
+        result = client.send(testMessage);
 
         Thread.sleep(30);
 
