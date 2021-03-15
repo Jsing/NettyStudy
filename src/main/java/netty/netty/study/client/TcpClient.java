@@ -15,6 +15,7 @@ import java.util.concurrent.*;
 /**
  * Netty Tcp Client 기능을 제공합니다.
  * TODO : 추후 임의로 던지는 이벤트 메시지를 구조화하여 처리하도록 합니다.
+ * TODO : ByteBuf ReferenceCount 관련된 내용을 정확하게 처리하도록 해야 합니다.
  */
 public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
