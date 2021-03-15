@@ -4,12 +4,9 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import lombok.extern.slf4j.Slf4j;
 import netty.netty.study.client.handler.ChannelStatusMonitor;
 import netty.netty.study.data.ConnectionTag;
-import netty.netty.study.data.Messaging;
 import netty.netty.study.utils.StackTraceUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import java.net.InetSocketAddress;
@@ -20,8 +17,8 @@ import java.util.concurrent.*;
  */
 public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
-    private final ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
-    private final UserTask userTask = new UserTask();
+    private final TcpClient.ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
+    private final TcpClient.UserTask userTask = new UserTask();
     private Channel channel;
     private ConnectionTag connectionTag;
     private boolean shouldRecoverConnect = true;
@@ -134,8 +131,7 @@ public class TcpClient implements ChannelStatusListener {
         return result;
     }
 
-    // TODO beginUserTask() 이름 변경
-    public boolean scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+    public boolean beginUserTask(Runnable task, long initialDelay, long period, TimeUnit unit) {
         return userTask.begin(task, initialDelay, period, unit);
     }
 
