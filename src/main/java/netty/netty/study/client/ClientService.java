@@ -1,6 +1,16 @@
 package netty.netty.study.client;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
+import io.netty.util.CharsetUtil;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import netty.netty.study.client.handler.ByteToMessageDecoderTest;
+import netty.netty.study.client.handler.HelloStarterHandler;
+import netty.netty.study.client.handler.LastStatusUpdateHandler;
 import netty.netty.study.client.initializer.ClientChannelInitializer;
 import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.data.LastStatus;
@@ -17,7 +27,20 @@ public class ClientService {
 
     public void init() {
 
-        tcpClient.init(new ClientChannelInitializer(lastStatus, (ChannelStatusListener)tcpClient));
+        tcpClient.init(new ChannelInitializer<Channel>() {
+            @Override
+            protected void initChannel(Channel socketChannel) throws Exception {
+                socketChannel.pipeline().addLast(
+                        // 수신
+                        new ByteToMessageDecoderTest(),
+                        new StringDecoder(CharsetUtil.UTF_8),
+                        new HelloStarterHandler(),
+                        new LastStatusUpdateHandler(lastStatus),
+
+                        // 전송
+                        new StringEncoder(CharsetUtil.UTF_8));
+            }
+        });
     }
 
     public void end() {
