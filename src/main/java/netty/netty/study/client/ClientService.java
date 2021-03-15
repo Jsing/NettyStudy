@@ -68,7 +68,7 @@ public class ClientService {
         tcpClient.disconnect();
     }
 
-    public boolean scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+    public boolean beginUserTask(Runnable task, long initialDelay, long period, TimeUnit unit) {
         return tcpClient.beginUserTask(task, initialDelay, period, unit);
     }
 

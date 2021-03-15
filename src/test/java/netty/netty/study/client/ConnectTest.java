@@ -94,7 +94,7 @@ public class ConnectTest {
         Thread.sleep(1000);
 
         System.out.println("scheduleAtFixedRate(1) --------------------------- ");
-        client.scheduleAtFixedRate(() -> {
+        client.beginUserTask(() -> {
             try {
                 client.send("1");
                 System.out.println("1 =" + Thread.currentThread().toString());
@@ -113,7 +113,7 @@ public class ConnectTest {
         Thread.sleep(1000);
 
         System.out.println("scheduleAtFixedRate(2) --------------------------- ");
-        client.scheduleAtFixedRate(() -> {
+        client.beginUserTask(() -> {
             client.send("2");
             System.out.println("2 =" + Thread.currentThread().toString());
         }, 0, 1000, TimeUnit.MILLISECONDS);
