@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import netty.netty.study.configure.ServerAddress;
 import netty.netty.study.server.ServerService;
 import netty.netty.study.server.TcpServer;
+import org.apache.catalina.Server;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -11,6 +12,26 @@ import org.springframework.boot.test.context.SpringBootTest;
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class
 ExceptionalConnectTest {
+
+
+    @Test
+    @DisplayName("Send before connection")
+    @SneakyThrows
+    void sendBeforeConnectionTest() {
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
+        server.start();
+        ClientService client = new ClientService();
+        client.init();
+
+        client.beginConnectUntilSuccess(ServerAddress.info());
+
+        boolean result = client.send("Test");
+
+        Assertions.assertFalse(result);
+
+        client.disconnect();
+        server.shutdown();
+    }
 
     @Test
     @DisplayName("N Reconnect->Transfer")

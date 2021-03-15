@@ -6,14 +6,15 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import netty.netty.study.client.handler.ChannelStatusMonitor;
 import netty.netty.study.data.ConnectionTag;
+import netty.netty.study.data.Messaging;
 import netty.netty.study.utils.StackTraceUtils;
 import org.springframework.util.Assert;
-
 import java.net.InetSocketAddress;
 import java.util.concurrent.*;
 
 /**
  * Netty Tcp Client 기능을 제공합니다.
+ * TODO : 추후 임의로 던지는 이벤트 메시지를 구조화하여 처리하도록 합니다.
  */
 public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
@@ -107,28 +108,26 @@ public class TcpClient implements ChannelStatusListener {
         }
     }
 
-    public boolean send(Object message) {
-        if (channel == null) {
-            // log something...
-            return false;
-        }
-        ChannelFuture future = channel.writeAndFlush(message);
+    public boolean send(Object message, boolean shouldLog) {
+        Assert.notNull(connectionTag, "connectUntilSuccess() must be called before.");
         try {
-            future.sync();
-        } catch (Exception e) {
-            e.printStackTrace();
-            // log something...
-            return false;
-        }
-        return true;
-    }
+            if (channel == null) {
+                Messaging.error(connectionTag.getEquipmentId(), "channel is null");
+                return false;
+            }
 
-    public boolean send(Object message, boolean doLog) {
-        boolean result = send(message);
-        if (doLog) {
-            // log something...
+            try {
+                channel.writeAndFlush(message);
+            } catch (Exception e) {
+                Messaging.error(connectionTag.getEquipmentId(), e.getCause().toString());
+                return false;
+            }
+            return true;
+        } finally {
+            if (shouldLog) {
+                Messaging.info(connectionTag.getEquipmentId(), ((String) message));
+            }
         }
-        return result;
     }
 
     public boolean beginUserTask(Runnable task, long initialDelay, long period, TimeUnit unit) {
@@ -155,7 +154,7 @@ public class TcpClient implements ChannelStatusListener {
 
     @Override
     public void channelActive() {
-        //Messaging.connected(connectionTag.getEquipmentId());
+        Messaging.connected(connectionTag.getEquipmentId());
     }
 
     @Override
@@ -163,21 +162,20 @@ public class TcpClient implements ChannelStatusListener {
         if (shouldRecoverConnect) {
             connectUntilSuccess.begin(this.connectionTag);
         }
-        //Messaging.disconnected(connectionTag.getEquipmentId());
+        Messaging.disconnected(connectionTag.getEquipmentId());
     }
 
     @Override
     public void exceptionCaught(Throwable cause) {
-        //Messaging.error(connectionTag.getEquipmentId(), cause.toString());
+        Messaging.error(connectionTag.getEquipmentId(), cause.toString());
     }
 
     private class UserTask {
         private final CopyOnWriteArrayList<ScheduledFuture<?>> userTaskFutures = new CopyOnWriteArrayList<>();
 
-        // TODO startUserTask() 이름 변경
         public boolean begin(Runnable task, long initialDelay, long period, TimeUnit unit) {
             if (channel == null) {
-                // log something...
+                Messaging.error(connectionTag.getEquipmentId(), "channel is null");
                 return false;
             }
             ScheduledFuture<?> future = channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
@@ -201,7 +199,7 @@ public class TcpClient implements ChannelStatusListener {
         /**
          * 연결 반복 실행
          */
-        private final ExecutorService executor = Executors.newSingleThreadExecutor(); // TODO 종료 안시켜주나?
+        private final ExecutorService executor = Executors.newSingleThreadExecutor();
         /**
          * 비동기 연결 반복 실행에 대한 Future 객체
          */
@@ -220,7 +218,9 @@ public class TcpClient implements ChannelStatusListener {
             future = begin(connectionTag);
             try {
                 future.get();
-            } catch (InterruptedException | ExecutionException e) {
+            }catch (InterruptedException interruptedException) {
+                // do nothing
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -230,7 +230,7 @@ public class TcpClient implements ChannelStatusListener {
          *
          * @param connectionTag
          * @return 연결 반복 실행에 대한 Future 객체
-         * @see TcpClient.connectOnce()
+         * @see this.connectOnce()
          */
         public Future<Void> begin(ConnectionTag connectionTag) {
             cancelEvent = new CountDownLatch(1);
@@ -256,7 +256,9 @@ public class TcpClient implements ChannelStatusListener {
                 cancelEvent.countDown();
                 try {
                     future.get();
-                } catch (InterruptedException | ExecutionException e) {
+                }catch (InterruptedException interruptedException) {
+                    // do nothing
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }

@@ -50,7 +50,7 @@ public class ClientService {
     }
 
     public boolean send(Object msg) {
-        return tcpClient.send(msg);
+        return tcpClient.send(msg, true);
     }
 
     public boolean isActive() {
