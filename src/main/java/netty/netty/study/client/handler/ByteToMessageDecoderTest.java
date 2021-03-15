@@ -12,7 +12,6 @@ public class ByteToMessageDecoderTest extends ByteToMessageDecoder {
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         ByteBuf readableBuf = in.readBytes(in.readableBytes());
         out.add(readableBuf);
-
-        //readableBuf.release();
+        readableBuf.release(); // release 하지 않으면 Memory Leak 이 발생한다.
     }
 }
