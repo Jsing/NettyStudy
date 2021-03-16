@@ -343,15 +343,25 @@ public class ExceptionalConnectTest {
         client.init();
         client.connectUntilSuccess(ServerAddress.info());
 
+        System.out.println("Action : client.send()");
         client.send("client.send()");
+
+        System.out.println("Action : client.sendAndLog()");
         client.sendAndLog("client.sendAndLog()");
 
+        System.out.println("Action : Server.shutdown()");
         server.shutdown();
 
+        System.out.println("Action : client.send()");
         client.send("client.send()");
+
+        System.out.println("Action : client.sendAndLog()");
         client.sendAndLog("client.sendAndLog()");
 
+        System.out.println("Action : client.disconnect()");
         client.disconnect();
+
+        System.out.println("Action : server.shutdown()");
         server.shutdown();
     }
 

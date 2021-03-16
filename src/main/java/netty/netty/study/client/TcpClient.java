@@ -102,8 +102,6 @@ public class TcpClient implements ChannelStatusListener {
             connectUntilSuccess.stop();
             stopUserTasks();
             if (channel != null) {
-                System.out.println("channel.pipeline().remove(ChannelStatusMonitor.class)");
-                ChannelHandler handler = channel.pipeline().remove(ChannelStatusMonitor.class);
                 channel.close().sync();
                 channel = null;
             }
