@@ -194,9 +194,7 @@ public class TcpClient implements ChannelStatusListener {
     @Override
     public void channelInactive() {
         if (shouldRecoverConnect) {
-            //disconnect();
-            //beginConnectUntilSuccess(this.connectionTag);
-            //connectUntilSuccess.begin(this.connectionTag);
+            beginConnectUntilSuccess(this.connectionTag);
         }
         Messaging.disconnected(connectionTag.getEquipmentId());
     }
