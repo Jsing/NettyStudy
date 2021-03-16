@@ -29,8 +29,8 @@ public class ClientService {
             protected void initChannel(Channel socketChannel) throws Exception {
                 socketChannel.pipeline().addLast(
                         // 수신
-                        new ByteToMessageDecoderTest(),
                         new StringDecoder(CharsetUtil.UTF_8),
+                        new ByteToMessageDecoderTest(),
                         new HelloStarterHandler(),
                         new LastStatusUpdateHandler(lastStatus),
 
@@ -70,7 +70,11 @@ public class ClientService {
     }
 
     public boolean send(Object msg) {
-        return tcpClient.send(msg, true);
+        return tcpClient.send(msg);
+    }
+
+    public boolean sendAndLog(Object msg) {
+        return tcpClient.sendAndLog(msg);
     }
 
     public boolean isActive() {

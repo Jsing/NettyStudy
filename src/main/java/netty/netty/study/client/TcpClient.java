@@ -9,6 +9,7 @@ import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.data.Messaging;
 import netty.netty.study.utils.StackTraceUtils;
 import org.springframework.util.Assert;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.*;
 
@@ -20,6 +21,7 @@ import java.util.concurrent.*;
 public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
     private final TcpClient.ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
+    private final String eventLogFormat = "%s : %s, result : %s";
     private final TcpClient.UserTask userTask = new UserTask();
     private Channel channel;
     private ConnectionTag connectionTag;
@@ -100,7 +102,8 @@ public class TcpClient implements ChannelStatusListener {
             connectUntilSuccess.stop();
             stopUserTasks();
             if (channel != null) {
-                channel.pipeline().remove(ChannelStatusMonitor.class);
+                System.out.println("channel.pipeline().remove(ChannelStatusMonitor.class)");
+                ChannelHandler handler = channel.pipeline().remove(ChannelStatusMonitor.class);
                 channel.close().sync();
                 channel = null;
             }
@@ -109,26 +112,58 @@ public class TcpClient implements ChannelStatusListener {
         }
     }
 
-    public boolean send(Object message, boolean shouldLog) {
-        Assert.notNull(connectionTag, "connectUntilSuccess() must be called before.");
+    /**
+     * 원격지로 메시지를 전송합니다. 전송에 대한 이벤트 로그를 남기지 않고 예외가 발생한 경우에만 이벤트 로그를 남깁니다.
+     * @param message 전송 메시지
+     * @return 전송 결과
+     */
+    public boolean send(Object message) {
         try {
-            if (channel == null) {
-                Messaging.error(connectionTag.getEquipmentId(), "channel is null");
-                return false;
-            }
-
-            try {
-                channel.writeAndFlush(message);
-            } catch (Exception e) {
-                Messaging.error(connectionTag.getEquipmentId(), e.getCause().toString());
-                return false;
-            }
-            return true;
-        } finally {
-            if (shouldLog) {
-                Messaging.info(connectionTag.getEquipmentId(), ((String) message));
-            }
+            beginSend(message);
+        } catch (Exception e) {
+            String eventLog = String.format(eventLogFormat, "send", message, e.toString());
+            Messaging.error(connectionTag.getEquipmentId(), eventLog);
+            return false;
         }
+        return true;
+    }
+
+    /**
+     * 원격지로 메시지를 전송하고 이벤트 로그를 남깁니다.
+     * @param message 전송 메시지
+     * @return 전송 결과
+     */
+    public boolean sendAndLog(Object message) {
+        ChannelFuture future;
+        try {
+            future = beginSend(message);
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    String eventLog = String.format(eventLogFormat, "send", message, future.isSuccess());
+                    Messaging.info(connectionTag.getEquipmentId(), eventLog);
+                }
+            });
+        } catch (Exception e) {
+            String eventLog = String.format(eventLogFormat, "send", message, e.toString());
+            Messaging.error(connectionTag.getEquipmentId(), eventLog);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * send() 및 sendAndLog() 메쏘드에서 공통으로 호출하여 원격지로 메시지를 전송합니다.
+     *
+     * @param message 전송 메시지
+     * @return 전송에 대한 Future 객체
+     */
+    private ChannelFuture beginSend(Object message) {
+        Assert.notNull(connectionTag, "connectUntilSuccess() must be called before.");
+        if (channel == null) {
+            throw new NullPointerException("channel is null");
+        }
+        return channel.writeAndFlush(message);
     }
 
     public boolean beginUserTask(Runnable task, long initialDelay, long period, TimeUnit unit) {
@@ -161,7 +196,9 @@ public class TcpClient implements ChannelStatusListener {
     @Override
     public void channelInactive() {
         if (shouldRecoverConnect) {
-            connectUntilSuccess.begin(this.connectionTag);
+            //disconnect();
+            //beginConnectUntilSuccess(this.connectionTag);
+            //connectUntilSuccess.begin(this.connectionTag);
         }
         Messaging.disconnected(connectionTag.getEquipmentId());
     }
@@ -171,6 +208,9 @@ public class TcpClient implements ChannelStatusListener {
         Messaging.error(connectionTag.getEquipmentId(), cause.toString());
     }
 
+    /**
+     * Channel 의 EventLoop 쓰레드를 통해 실행할 사용자 태스크를 처리합니다.
+     */
     private class UserTask {
         private final CopyOnWriteArrayList<ScheduledFuture<?>> userTaskFutures = new CopyOnWriteArrayList<>();
 
@@ -219,7 +259,7 @@ public class TcpClient implements ChannelStatusListener {
             future = begin(connectionTag);
             try {
                 future.get();
-            }catch (InterruptedException interruptedException) {
+            } catch (InterruptedException interruptedException) {
                 // do nothing
             } catch (Exception e) {
                 e.printStackTrace();
@@ -257,8 +297,8 @@ public class TcpClient implements ChannelStatusListener {
                 cancelEvent.countDown();
                 try {
                     future.get();
-                }catch (InterruptedException interruptedException) {
-                    // do nothing
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace(); // TODO 추후 최적화 필요함
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

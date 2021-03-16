@@ -10,8 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-public class
-ExceptionalConnectTest {
+public class ExceptionalConnectTest {
 
 
     @Test
@@ -316,6 +315,46 @@ ExceptionalConnectTest {
         server.shutdown();
     }
 
+    @Test
+    @DisplayName("Simple Transfer")
+    @SneakyThrows
+    void simpleTransferTest() {
+        boolean connected = false;
+
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
+        server.start();
+        ClientService client = new ClientService();
+        client.init();
+        client.connectUntilSuccess(ServerAddress.info());
+
+        transfer(server, client);
+
+        client.disconnect();
+        server.shutdown();
+    }
+
+    @Test
+    @DisplayName("전송")
+    @SneakyThrows
+    void sendTest() throws Exception {
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
+        server.start();
+        ClientService client = new ClientService();
+        client.init();
+        client.connectUntilSuccess(ServerAddress.info());
+
+        client.send("client.send()");
+        client.sendAndLog("client.sendAndLog()");
+
+        server.shutdown();
+
+        client.send("client.send()");
+        client.sendAndLog("client.sendAndLog()");
+
+        client.disconnect();
+        server.shutdown();
+    }
+
     @SneakyThrows
     void transfer(TcpServer server, ClientService client) {
         final String testBaseMessage = "Hello I am Jsing";
@@ -336,7 +375,17 @@ ExceptionalConnectTest {
 
         System.out.println("[Server] assertEquals() = " + testMessage + " : " + msgReceived);
         Assertions.assertEquals(testMessage, msgReceived);
+
+        ///
+        System.out.println("[Server] send() = " + testMessage);
+        serverService.send(testMessage);
+
+        Thread.sleep(30);
+
+        msgReceived = client.lastStatus().get();
+        System.out.println("[Client] receive() = " + msgReceived);
+
+        System.out.println("[Client] assertEquals() = " + testMessage + " : " + msgReceived);
+        Assertions.assertEquals(testMessage, msgReceived);
     }
-
-
 }

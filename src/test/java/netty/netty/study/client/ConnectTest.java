@@ -122,8 +122,6 @@ public class ConnectTest {
         System.out.println("disconnect() --------------------------- ");
         client.disconnect();
         Thread.sleep(1000);
-
-
     }
 
     @DisplayName("Server->Client")

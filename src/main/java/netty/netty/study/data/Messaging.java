@@ -33,11 +33,11 @@ public class Messaging {
     }
 
     public void connected(int camId) {
-        System.out.println("camId = " + camId);
+        System.out.println("camId = " + camId + " connected");
     }
 
 
     public void disconnected(int camId) {
-        System.out.println("camId = " + camId);
+        System.out.println("camId = " + camId + " disconnected");
     }
 }
