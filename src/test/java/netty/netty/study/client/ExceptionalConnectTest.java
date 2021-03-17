@@ -347,7 +347,7 @@ public class ExceptionalConnectTest {
         client.send("client.send()");
 
         System.out.println("Action : client.sendAndLog()");
-        client.sendAndLog("client.sendAndLog()");
+        client.sendAndLog("client.sendAndLog()", "sendAndLog Test");
 
         System.out.println("Action : Server.shutdown()");
         server.shutdown();
@@ -356,7 +356,7 @@ public class ExceptionalConnectTest {
         client.send("client.send()");
 
         System.out.println("Action : client.sendAndLog()");
-        client.sendAndLog("client.sendAndLog()");
+        client.sendAndLog("client.sendAndLog()", "SendAndLog Test");
 
         System.out.println("Action : client.disconnect()");
         client.disconnect();

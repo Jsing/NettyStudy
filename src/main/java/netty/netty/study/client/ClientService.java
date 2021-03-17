@@ -66,7 +66,7 @@ public class ClientService {
     }
 
     public boolean beginUserTask(Runnable task, long initialDelay, long period, TimeUnit unit) {
-        return tcpClient.beginUserTask(task, initialDelay, period, unit);
+        return tcpClient.scheduleEventLoopTask(task, initialDelay, period, unit);
     }
 
     public boolean send(Object msg) {

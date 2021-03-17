@@ -22,7 +22,7 @@ public class TcpClient implements ChannelStatusListener {
     private final Bootstrap bootstrap = new Bootstrap();
     private final TcpClient.ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
     private final String eventLogFormat = "%s : %s, result : %s";
-    private final TcpClient.UserTask userTask = new UserTask();
+    private final EventLoopTasks eventLoopTasks = new EventLoopTasks();
     private Channel channel;
     private ConnectionTag connectionTag;
     private boolean shouldRecoverConnect = true;
@@ -49,7 +49,7 @@ public class TcpClient implements ChannelStatusListener {
                 channel.eventLoop().shutdownGracefully().sync();
             }
             connectUntilSuccess.stop();
-            userTask.stop();
+            eventLoopTasks.stopAll();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -60,19 +60,19 @@ public class TcpClient implements ChannelStatusListener {
         Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "you have to call connectUntilSuccess()");
 
         this.connectionTag = connectionTag;
-        this.disconnect();
+        disconnect();
         return connectOnce(connectionTag);
     }
 
     public void connectUntilSuccess(ConnectionTag connectionTag) {
         this.connectionTag = connectionTag;
-        this.disconnect();
+        disconnect();
         connectUntilSuccess.sync(connectionTag);
     }
 
     public Future<Void> beginConnectUntilSuccess(ConnectionTag connectionTag) {
         this.connectionTag = connectionTag;
-        this.disconnect();
+        disconnect();
         return connectUntilSuccess.begin(connectionTag);
     }
 
@@ -100,7 +100,7 @@ public class TcpClient implements ChannelStatusListener {
         shouldRecoverConnect = false; // 명시적으로 연결을 끊는 경우 연결 복구 로직 OFF
         try {
             connectUntilSuccess.stop();
-            stopUserTasks();
+            stopEventLoopTasks();
             if (channel != null) {
                 channel.close().sync();
                 channel = null;
@@ -164,12 +164,12 @@ public class TcpClient implements ChannelStatusListener {
         return channel.writeAndFlush(message);
     }
 
-    public boolean beginUserTask(Runnable task, long initialDelay, long period, TimeUnit unit) {
-        return userTask.begin(task, initialDelay, period, unit);
+    public boolean scheduleEventLoopTask(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        return eventLoopTasks.schedule(task, initialDelay, period, unit);
     }
 
-    public void stopUserTasks() {
-        userTask.stop();
+    public void stopEventLoopTasks() {
+        eventLoopTasks.stopAll();
     }
 
     public boolean isActive() {
@@ -207,10 +207,10 @@ public class TcpClient implements ChannelStatusListener {
     /**
      * Channel 의 EventLoop 쓰레드를 통해 실행할 사용자 태스크를 처리합니다.
      */
-    private class UserTask {
+    private class EventLoopTasks {
         private final CopyOnWriteArrayList<ScheduledFuture<?>> userTaskFutures = new CopyOnWriteArrayList<>();
 
-        public boolean begin(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        public boolean schedule(Runnable task, long initialDelay, long period, TimeUnit unit) {
             if (channel == null) {
                 Messaging.error(connectionTag.getEquipmentId(), "channel is null");
                 return false;
@@ -220,7 +220,7 @@ public class TcpClient implements ChannelStatusListener {
             return true;
         }
 
-        public void stop() {
+        public void stopAll() {
             if (!userTaskFutures.isEmpty()) {
                 userTaskFutures.forEach(future -> future.cancel(true));
                 userTaskFutures.clear();
@@ -229,12 +229,12 @@ public class TcpClient implements ChannelStatusListener {
     }
 
     /**
-     * 연결 성공할 때 까지 연결을 재시도하는 기능을 캡슐화합니다.
+     * 전용 쓰레드를 통해 연결 성공할 때 까지 연결을 재시도하는 기능을 캡슐화합니다.
      * Netty 에서 제공하는 EventLoop 를 통하여 실행 시, I/O 작업에 영향을 끼치는 동기 함수 사용에 제약이 생겨 별도의 전용 쓰레드로 처리합니다.
      */
     private class ConnectUntilSuccess {
         /**
-         * 연결 반복 실행
+         * 연결 반복 실행 전용 쓰레드
          */
         private final ExecutorService executor = Executors.newSingleThreadExecutor();
         /**
@@ -289,7 +289,7 @@ public class TcpClient implements ChannelStatusListener {
          * 연결 반복 실행 종료
          */
         public void stop() {
-            if (cancelEvent != null && cancelEvent.getCount() != 0) {
+            if (cancelEvent != null && cancelEvent.getCount() > 0) {
                 cancelEvent.countDown();
                 try {
                     future.get();
