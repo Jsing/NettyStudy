@@ -59,8 +59,8 @@ public class TcpClient implements ChannelStatusListener {
         Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("postConstruct"), "you have to call connectUntilSuccess()");
         Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "you have to call connectUntilSuccess()");
 
-        this.connectionTag = connectionTag;
         disconnect();
+        this.connectionTag = connectionTag;
         return connectOnce(connectionTag);
     }
 
@@ -118,29 +118,19 @@ public class TcpClient implements ChannelStatusListener {
      */
     public boolean send(Object message) {
         Assert.notNull(connectionTag, "connectUntilSuccess() must be called before.");
+        if (channel == null) {
+            Messaging.error(connectionTag.getEquipmentId(), "channel is null");
+            return false;
+        }
 
         try {
-            beginSend(message);
+            channel.writeAndFlush(message);
         } catch (Exception e) {
             String eventLog = String.format(eventLogFormat, "send", message, e.toString());
             Messaging.error(connectionTag.getEquipmentId(), eventLog);
             return false;
         }
         return true;
-    }
-
-    /**
-     * send() 및 sendAndLog() 메쏘드에서 공통으로 호출하여 원격지로 메시지를 전송합니다.
-     *
-     * @param message 전송 메시지
-     * @return 전송에 대한 Future 객체
-     */
-    private ChannelFuture beginSend(Object message) {
-        Assert.notNull(connectionTag, "connectUntilSuccess() must be called before.");
-        if (channel == null) {
-            throw new NullPointerException("channel is null");
-        }
-        return channel.writeAndFlush(message);
     }
 
     public boolean scheduleEventLoopTask(Runnable task, long initialDelay, long period, TimeUnit unit) {
@@ -150,6 +140,7 @@ public class TcpClient implements ChannelStatusListener {
     public void stopEventLoopTasks() {
         eventLoopTasks.stopAll();
     }
+
 
     public boolean isActive() {
         if (channel == null) {
@@ -173,7 +164,6 @@ public class TcpClient implements ChannelStatusListener {
     @Override
     public void channelInactive() {
         if (shouldRecoverConnect) {
-            // TODO disconnect 안하는 것이 옳은 것이 아닌가?
             connectUntilSuccess.begin(this.connectionTag);
         }
         Messaging.disconnected(connectionTag.getEquipmentId());
@@ -235,8 +225,6 @@ public class TcpClient implements ChannelStatusListener {
             future = begin(connectionTag);
             try {
                 future.get();
-            } catch (InterruptedException interruptedException) {
-                // do nothing
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -245,7 +233,7 @@ public class TcpClient implements ChannelStatusListener {
         /**
          * 연결 반복 실행 태스크 시작
          *
-         * @param connectionTag
+         * @param connectionTag 연결 정보
          * @return 연결 반복 실행에 대한 Future 객체
          * @see this.connectOnce()
          */
@@ -273,8 +261,6 @@ public class TcpClient implements ChannelStatusListener {
                 cancelEvent.countDown();
                 try {
                     future.get(2000, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException interruptedException) {
-                    interruptedException.printStackTrace(); // TODO 추후 최적화 필요함
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
