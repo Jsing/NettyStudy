@@ -65,14 +65,14 @@ public class TcpClient implements ChannelStatusListener {
     }
 
     public void connectUntilSuccess(ConnectionTag connectionTag) {
-        this.connectionTag = connectionTag;
         disconnect();
+        this.connectionTag = connectionTag;
         connectUntilSuccess.sync(connectionTag);
     }
 
     public Future<Void> beginConnectUntilSuccess(ConnectionTag connectionTag) {
-        this.connectionTag = connectionTag;
         disconnect();
+        this.connectionTag = connectionTag;
         return connectUntilSuccess.begin(connectionTag);
     }
 
@@ -112,36 +112,15 @@ public class TcpClient implements ChannelStatusListener {
 
     /**
      * 원격지로 메시지를 전송합니다. 전송에 대한 이벤트 로그를 남기지 않고 예외가 발생한 경우에만 이벤트 로그를 남깁니다.
+     *
      * @param message 전송 메시지
      * @return 전송 결과
      */
     public boolean send(Object message) {
+        Assert.notNull(connectionTag, "connectUntilSuccess() must be called before.");
+
         try {
             beginSend(message);
-        } catch (Exception e) {
-            String eventLog = String.format(eventLogFormat, "send", message, e.toString());
-            Messaging.error(connectionTag.getEquipmentId(), eventLog);
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * 원격지로 메시지를 전송하고 이벤트 로그를 남깁니다.
-     * @param message 전송 메시지
-     * @return 전송 결과
-     */
-    public boolean sendAndLog(Object message) {
-        ChannelFuture future;
-        try {
-            future = beginSend(message);
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    String eventLog = String.format(eventLogFormat, "send", message, future.isSuccess());
-                    Messaging.info(connectionTag.getEquipmentId(), eventLog);
-                }
-            });
         } catch (Exception e) {
             String eventLog = String.format(eventLogFormat, "send", message, e.toString());
             Messaging.error(connectionTag.getEquipmentId(), eventLog);
@@ -194,7 +173,8 @@ public class TcpClient implements ChannelStatusListener {
     @Override
     public void channelInactive() {
         if (shouldRecoverConnect) {
-            beginConnectUntilSuccess(this.connectionTag);
+            // TODO disconnect 안하는 것이 옳은 것이 아닌가?
+            connectUntilSuccess.begin(this.connectionTag);
         }
         Messaging.disconnected(connectionTag.getEquipmentId());
     }
@@ -292,7 +272,7 @@ public class TcpClient implements ChannelStatusListener {
             if (cancelEvent != null && cancelEvent.getCount() > 0) {
                 cancelEvent.countDown();
                 try {
-                    future.get();
+                    future.get(2000, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace(); // TODO 추후 최적화 필요함
                 } catch (Exception e) {

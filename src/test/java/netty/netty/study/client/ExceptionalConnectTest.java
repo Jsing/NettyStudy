@@ -2,6 +2,7 @@ package netty.netty.study.client;
 
 import lombok.SneakyThrows;
 import netty.netty.study.configure.ServerAddress;
+import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.server.ServerService;
 import netty.netty.study.server.TcpServer;
 import org.apache.catalina.Server;
@@ -11,6 +12,43 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class ExceptionalConnectTest {
+
+
+    @Test
+    @DisplayName("Client Connect Switch")
+    @SneakyThrows
+    void clientConnectSwitch() {
+        TcpServer server1 = new TcpServer(ServerAddress.info().getPort());
+        TcpServer server2 = new TcpServer(ServerAddress.info().getPort()+1);
+        server1.start();
+        server2.start();
+
+        ClientService client = new ClientService();
+        client.init();
+
+        System.out.println("[Client] beginConnectUntilSuccess");
+        client.beginConnectUntilSuccess(ServerAddress.info());
+
+        System.out.println("[Client] read.sleep(1000)");
+        Thread.sleep(1000);
+
+        System.out.println("[Client] beginConnectUntilSuccess");
+        client.beginConnectUntilSuccess((new ConnectionTag(1,"127.0.0.1", ServerAddress.info().getPort() + 1)));
+
+        System.out.println("[Client] Thread.sleep(1000)");
+        Thread.sleep(1000);
+
+        transfer(server2, client);
+
+        System.out.println("[Client] Thread.sleep(1000)");
+        Thread.sleep(3000);
+
+        System.out.println("[Client] disconnect()");
+        client.disconnect();
+        System.out.println("[Server] shutdown()");
+        server1.shutdown();
+        server2.shutdown();
+    }
 
 
     @Test
@@ -300,7 +338,7 @@ public class ExceptionalConnectTest {
         server.start();
 
         System.out.println("[Client] sleep(1000)");
-        Thread.sleep(1000);
+        Thread.sleep(10000);
 
         System.out.println("[Client] isActive() = " + client.isActive());
         Assertions.assertTrue(client.isActive());
@@ -341,22 +379,18 @@ public class ExceptionalConnectTest {
         server.start();
         ClientService client = new ClientService();
         client.init();
+
+        System.out.println("Action : client.connectUntilSuccess()");
         client.connectUntilSuccess(ServerAddress.info());
 
         System.out.println("Action : client.send()");
         client.send("client.send()");
-
-        System.out.println("Action : client.sendAndLog()");
-        client.sendAndLog("client.sendAndLog()", "sendAndLog Test");
 
         System.out.println("Action : Server.shutdown()");
         server.shutdown();
 
         System.out.println("Action : client.send()");
         client.send("client.send()");
-
-        System.out.println("Action : client.sendAndLog()");
-        client.sendAndLog("client.sendAndLog()", "SendAndLog Test");
 
         System.out.println("Action : client.disconnect()");
         client.disconnect();

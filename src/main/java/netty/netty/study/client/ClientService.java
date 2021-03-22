@@ -73,10 +73,6 @@ public class ClientService {
         return tcpClient.send(msg);
     }
 
-    public boolean sendAndLog(Object msg) {
-        return tcpClient.sendAndLog(msg);
-    }
-
     public boolean isActive() {
         return tcpClient.isActive();
     }
