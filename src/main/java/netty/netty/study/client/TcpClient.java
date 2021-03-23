@@ -4,7 +4,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import netty.netty.study.client.handler.ChannelStatusMonitor;
+import netty.netty.study.client.handler.ChannelExceptionMonitor;
 import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.data.Messaging;
 import netty.netty.study.utils.StackTraceUtils;
@@ -18,7 +18,7 @@ import java.util.concurrent.*;
  * TODO : 추후 임의로 던지는 이벤트 메시지를 구조화하여 처리하도록 합니다.
  * TODO : ByteBuf ReferenceCount 관련된 내용을 정확하게 처리하도록 해야 합니다.
  */
-public class TcpClient implements ChannelStatusListener {
+public class TcpClient implements ChannelExceptionListener {
     private final Bootstrap bootstrap = new Bootstrap();
     private final TcpClient.ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
     private final String eventLogFormat = "%s : %s, result : %s";
@@ -26,6 +26,7 @@ public class TcpClient implements ChannelStatusListener {
     private Channel channel;
     private ConnectionTag connectionTag;
     private boolean shouldRecoverConnect = true;
+    private boolean shouldAlarmConnectFail =true;
 
     // TODO : 꼭 한 번만 수행되어야 한다면 생성자로 옮기는 방향 검토!
     public void init(ChannelInitializer<?> channelInitializer) {
@@ -81,7 +82,10 @@ public class TcpClient implements ChannelStatusListener {
         try {
             channelFuture = bootstrap.connect(connectionTag.getIp(), connectionTag.getPort()).sync();
         } catch (Exception e) {
-            e.printStackTrace();
+            if (shouldAlarmConnectFail) {
+                Messaging.error(connectionTag.getEquipmentId(), "trying to connect fails (" + e.getMessage()+")");
+                shouldAlarmConnectFail = false;
+            }
             return false;
         }
 
@@ -89,10 +93,14 @@ public class TcpClient implements ChannelStatusListener {
             return false;
         }
 
+        Messaging.connected(connectionTag.getEquipmentId());
+
+        shouldAlarmConnectFail = true;
         shouldRecoverConnect = true;
+
         channel = channelFuture.channel();
 
-        channel.pipeline().addLast(new ChannelStatusMonitor(this));
+        channel.pipeline().addLast(new ChannelExceptionMonitor(this));
         return true;
     }
 
@@ -104,9 +112,10 @@ public class TcpClient implements ChannelStatusListener {
             if (channel != null) {
                 channel.close().sync();
                 channel = null;
+                Messaging.disconnected(connectionTag.getEquipmentId());
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Messaging.error(connectionTag.getEquipmentId(), "trying to disconnect fails (" + e.getMessage()+")");
         }
     }
 
@@ -157,16 +166,10 @@ public class TcpClient implements ChannelStatusListener {
     }
 
     @Override
-    public void channelActive() {
-        Messaging.connected(connectionTag.getEquipmentId());
-    }
-
-    @Override
     public void channelInactive() {
         if (shouldRecoverConnect) {
             connectUntilSuccess.begin(this.connectionTag);
         }
-        Messaging.disconnected(connectionTag.getEquipmentId());
     }
 
     @Override

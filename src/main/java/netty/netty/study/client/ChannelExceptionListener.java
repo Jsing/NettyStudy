@@ -1,11 +1,6 @@
 package netty.netty.study.client;
 
-public interface ChannelStatusListener {
-    /**
-     * 채널 Active 이벤트 발생
-     */
-    void channelActive();
-
+public interface ChannelExceptionListener {
     /**
      * 채널 Inactive 이벤트 발생
      */

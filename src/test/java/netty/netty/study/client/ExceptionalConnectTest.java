@@ -106,6 +106,50 @@ public class ExceptionalConnectTest {
     }
 
     @Test
+    @DisplayName("Disconnect Error Message")
+    @SneakyThrows
+    void disconnectErrorMessage() {
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
+        ClientService client = new ClientService();
+
+        client.init();
+
+        System.out.println("[Client] beginConnectUntilSuccess");
+        client.beginConnectUntilSuccess(ServerAddress.info());
+
+        System.out.println("[Client] sleep(10000)");
+        Thread.sleep(10000);
+
+        Assertions.assertFalse(client.isActive());
+
+        System.out.println("[Server] start");
+        server.start();
+
+        System.out.println("[Client] sleep(1000)");
+        Thread.sleep(1000);
+
+        Assertions.assertTrue(client.isActive());
+
+        System.out.println("[Server] shutdown");
+        server.shutdown();
+
+        System.out.println("[Client] sleep(10000)");
+        Thread.sleep(10000);
+
+        System.out.println("[Server] start");
+        server.start();
+
+        System.out.println("[Client] sleep(3000)");
+        Thread.sleep(3000);
+
+        Assertions.assertTrue(client.isActive());
+
+        System.out.println("[System] shutdown");
+        client.disconnect();
+        server.shutdown();
+    }
+
+    @Test
     @DisplayName("연결 성공할 때 까지 시도")
     @SneakyThrows
     void clientConnectUntilSuccess() {
@@ -118,7 +162,7 @@ public class ExceptionalConnectTest {
         client.beginConnectUntilSuccess(ServerAddress.info());
 
         System.out.println("[Client] sleep(5000)");
-        Thread.sleep(5000);
+        Thread.sleep(10000);
 
         Assertions.assertFalse(client.isActive());
 
@@ -133,7 +177,6 @@ public class ExceptionalConnectTest {
         System.out.println("[System] shutdown");
         client.disconnect();
         server.shutdown();
-
     }
 
     @Test

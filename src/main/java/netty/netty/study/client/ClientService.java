@@ -31,7 +31,7 @@ public class ClientService {
                         // 수신
                         new StringDecoder(CharsetUtil.UTF_8),
                         new ByteToMessageDecoderTest(),
-                        new HelloStarterHandler(),
+                        //new HelloStarterHandler(),
                         new LastStatusUpdateHandler(lastStatus),
 
                         // 전송
