@@ -58,19 +58,21 @@ public class TcpClient implements ChannelExceptionListener {
     public boolean connect(ConnectionTag connectionTag) {
         Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("postConstruct"), "you have to call connectUntilSuccess()");
         Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "you have to call connectUntilSuccess()");
-
+        shouldAlarmConnectFail=true;
         disconnect();
         this.connectionTag = connectionTag;
         return connectOnce(connectionTag);
     }
 
     public void connectUntilSuccess(ConnectionTag connectionTag) {
+        shouldAlarmConnectFail=true;
         disconnect();
         this.connectionTag = connectionTag;
         connectUntilSuccess.sync(connectionTag);
     }
 
     public Future<Void> beginConnectUntilSuccess(ConnectionTag connectionTag) {
+        shouldAlarmConnectFail=true;
         disconnect();
         this.connectionTag = connectionTag;
         return connectUntilSuccess.begin(connectionTag);
@@ -92,14 +94,14 @@ public class TcpClient implements ChannelExceptionListener {
             return false;
         }
 
-        Messaging.connected(connectionTag.getEquipmentId());
-
         shouldAlarmConnectFail = true;
         shouldRecoverConnect = true;
 
         channel = channelFuture.channel();
 
         channel.pipeline().addLast(new ChannelExceptionMonitor(this));
+
+        Messaging.connected(connectionTag.getEquipmentId());
         return true;
     }
 
@@ -148,7 +150,6 @@ public class TcpClient implements ChannelExceptionListener {
     public void stopEventLoopTasks() {
         eventLoopTasks.stopAll();
     }
-
 
     public boolean isActive() {
         if (channel == null) {

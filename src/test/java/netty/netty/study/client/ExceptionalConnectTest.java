@@ -5,7 +5,6 @@ import netty.netty.study.configure.ServerAddress;
 import netty.netty.study.data.ConnectionTag;
 import netty.netty.study.server.ServerService;
 import netty.netty.study.server.TcpServer;
-import org.apache.catalina.Server;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -121,6 +120,12 @@ public class ExceptionalConnectTest {
         Thread.sleep(10000);
 
         Assertions.assertFalse(client.isActive());
+
+        System.out.println("[Client] connect");
+        client.connectOnce(ServerAddress.info());
+
+        System.out.println("[Client] beginConnectUntilSuccess");
+        client.beginConnectUntilSuccess(ServerAddress.info());
 
         System.out.println("[Server] start");
         server.start();
