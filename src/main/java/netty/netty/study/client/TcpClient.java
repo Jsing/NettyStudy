@@ -28,7 +28,6 @@ public class TcpClient implements ChannelExceptionListener {
     private boolean shouldRecoverConnect = true;
     private boolean shouldAlarmConnectFail =true;
 
-    // TODO : 꼭 한 번만 수행되어야 한다면 생성자로 옮기는 방향 검토!
     public void init(ChannelInitializer<?> channelInitializer) {
         final int connectTimeoutMillis = 3000;
         final int nThreads = 2;
