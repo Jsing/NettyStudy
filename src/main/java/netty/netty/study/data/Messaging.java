@@ -13,7 +13,7 @@ public class Messaging {
     }
 
     public void info(int equipmentId, String code) {
-        System.out.println("camId = " + equipmentId + ", code = " + code);
+        System.out.println("Client = " + equipmentId + ", code = " + code);
     }
 
     public void warning(int equipmentId, String code, @Nullable Map<String, Object> params) {
@@ -21,7 +21,7 @@ public class Messaging {
     }
 
     public void warning(int equipmentId, String code) {
-        System.out.println("camId = " + equipmentId + ", code = " + code);
+        System.out.println("Client = " + equipmentId + ", code = " + code);
     }
 
     public void error(int equipmentId, String code, @Nullable Map<String, Object> params) {
@@ -29,7 +29,7 @@ public class Messaging {
     }
 
     public void error(int camId, String code) {
-        System.out.println("camId = " + camId + ", code = " + code);
+        System.out.println("Client Id = " + camId + ", code = " + code);
     }
 
     public void connected(int equipmentId) {
