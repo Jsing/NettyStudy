@@ -1,7 +1,6 @@
 package netty.netty.study.data;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 @AllArgsConstructor
 public class ConnectionTag {
@@ -19,5 +18,13 @@ public class ConnectionTag {
 
     public int getEquipmentId() {
         return equipmentId;
+    }
+
+    public void setConnected(boolean connected) {
+        if (connected == true) {
+            Messaging.connected(equipmentId);
+        } else {
+            Messaging.disconnected(equipmentId);
+        }
     }
 }

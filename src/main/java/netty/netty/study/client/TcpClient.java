@@ -21,12 +21,11 @@ import java.util.concurrent.*;
 public class TcpClient implements ChannelExceptionListener {
     private final Bootstrap bootstrap = new Bootstrap();
     private final TcpClient.ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
-    private final String eventLogFormat = "%s : %s, result : %s";
     private final EventLoopTasks eventLoopTasks = new EventLoopTasks();
     private Channel channel;
     private ConnectionTag connectionTag;
     private boolean shouldRecoverConnect = true;
-    private boolean shouldAlarmConnectFail =true;
+    private boolean shouldAlarmConnectFail = true;
 
     public void init(ChannelInitializer<?> channelInitializer) {
         final int connectTimeoutMillis = 3000;
@@ -58,21 +57,21 @@ public class TcpClient implements ChannelExceptionListener {
     public boolean connect(ConnectionTag connectionTag) {
         Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("postConstruct"), "you have to call connectUntilSuccess()");
         Assert.state(!StackTraceUtils.getCallerFunc().contentEquals("connect"), "you have to call connectUntilSuccess()");
-        shouldAlarmConnectFail=true;
+        shouldAlarmConnectFail = true;
         disconnect();
         this.connectionTag = connectionTag;
         return connectOnce(connectionTag);
     }
 
     public void connectUntilSuccess(ConnectionTag connectionTag) {
-        shouldAlarmConnectFail=true;
+        shouldAlarmConnectFail = true;
         disconnect();
         this.connectionTag = connectionTag;
         connectUntilSuccess.sync(connectionTag);
     }
 
     public Future<Void> beginConnectUntilSuccess(ConnectionTag connectionTag) {
-        shouldAlarmConnectFail=true;
+        shouldAlarmConnectFail = true;
         disconnect();
         this.connectionTag = connectionTag;
         return connectUntilSuccess.begin(connectionTag);
@@ -84,7 +83,7 @@ public class TcpClient implements ChannelExceptionListener {
             channelFuture = bootstrap.connect(connectionTag.getIp(), connectionTag.getPort()).sync();
         } catch (Exception e) {
             if (shouldAlarmConnectFail) {
-                Messaging.error(connectionTag.getEquipmentId(), "trying to connect fails (" + e.getMessage()+")");
+                Messaging.error(connectionTag.getEquipmentId(), toErrorMessage("trying to connect fails", connectionTag, e));
                 shouldAlarmConnectFail = false;
             }
             return false;
@@ -101,7 +100,7 @@ public class TcpClient implements ChannelExceptionListener {
 
         channel.pipeline().addLast(new ChannelExceptionMonitor(this));
 
-        Messaging.connected(connectionTag.getEquipmentId());
+        connectionTag.setConnected(true);
         return true;
     }
 
@@ -113,10 +112,10 @@ public class TcpClient implements ChannelExceptionListener {
             if (channel != null) {
                 channel.close().sync();
                 channel = null;
-                Messaging.disconnected(connectionTag.getEquipmentId());
+                connectionTag.setConnected(false);
             }
         } catch (Exception e) {
-            Messaging.error(connectionTag.getEquipmentId(), "trying to disconnect fails (" + e.getMessage()+")");
+            Messaging.error(connectionTag.getEquipmentId(), toErrorMessage("trying to disconnect fails", connectionTag, e));
         }
     }
 
@@ -129,15 +128,14 @@ public class TcpClient implements ChannelExceptionListener {
     public boolean send(Object message) {
         Assert.notNull(connectionTag, "connectUntilSuccess() must be called before.");
         if (channel == null) {
-            Messaging.error(connectionTag.getEquipmentId(), "channel is null");
+            Messaging.error(connectionTag.getEquipmentId(), toErrorMessage("trying to send fails", connectionTag, new NullPointerException()));
             return false;
         }
 
         try {
             channel.writeAndFlush(message);
         } catch (Exception e) {
-            String eventLog = String.format(eventLogFormat, "send", message, e.toString());
-            Messaging.error(connectionTag.getEquipmentId(), eventLog);
+            Messaging.error(connectionTag.getEquipmentId(), toErrorMessage("trying to send fails", connectionTag, e));
             return false;
         }
         return true;
@@ -174,7 +172,12 @@ public class TcpClient implements ChannelExceptionListener {
 
     @Override
     public void exceptionCaught(Throwable cause) {
-        Messaging.error(connectionTag.getEquipmentId(), cause.toString());
+        Messaging.error(connectionTag.getEquipmentId(), toErrorMessage("Channel exception caught", connectionTag, cause));
+    }
+
+    private String toErrorMessage(String description, ConnectionTag connectionTag, Throwable e) {
+
+        return String.format("%s (%s, %d, %s)", description, connectionTag.getIp(), connectionTag.getPort(), e.getMessage());
     }
 
     /**
@@ -185,7 +188,7 @@ public class TcpClient implements ChannelExceptionListener {
 
         public boolean schedule(Runnable task, long initialDelay, long period, TimeUnit unit) {
             if (channel == null) {
-                Messaging.error(connectionTag.getEquipmentId(), "channel is null");
+                Messaging.error(connectionTag.getEquipmentId(), toErrorMessage("trying to schedule fails", connectionTag, new NullPointerException()));
                 return false;
             }
             ScheduledFuture<?> future = channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
