@@ -177,7 +177,7 @@ public class TcpClient implements ChannelExceptionListener {
 
     private String toErrorMessage(String description, ConnectionTag connectionTag, Throwable e) {
 
-        return String.format("%s (%s, %d, %s)", description, connectionTag.getIp(), connectionTag.getPort(), e.toString());
+        return String.format("%s (%s, %d, %s)", description, connectionTag.getIp(), connectionTag.getPort(), e.getMessage());
     }
 
     /**

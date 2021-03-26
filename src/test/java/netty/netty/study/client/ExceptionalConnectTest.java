@@ -12,6 +12,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class ExceptionalConnectTest {
 
+    @Test
+    @SneakyThrows
+    void serverTest() {
+        TcpServer server = new TcpServer(12346);
+        server.start();
+
+        Thread.sleep(10000000);
+    }
 
     @Test
     @DisplayName("Client Connect Switch")
