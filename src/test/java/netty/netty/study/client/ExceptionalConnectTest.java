@@ -21,6 +21,36 @@ public class ExceptionalConnectTest {
         Thread.sleep(10000000);
     }
 
+
+    @Test
+    @DisplayName("connectAndDisconnectEventTest")
+    @SneakyThrows
+    void connectAndDisconnectEventTest() {
+        TcpServer server = new TcpServer(ServerAddress.info().getPort());
+        server.start();
+        ClientService client = new ClientService();
+        client.init();
+
+        System.out.println("client.connectUntilSuccess()");
+        client.connectUntilSuccess(new ConnectionTag(0, "127.0.0.1", 12345));
+        Assertions.assertTrue(client.isActive());
+        //Thread.sleep(1000);
+
+        System.out.println("client.disconnect()");
+        client.disconnect();
+        Assertions.assertFalse(client.isActive());
+        //Thread.sleep(1000);
+
+        System.out.println("client.connectUntilSuccess()");
+        client.connectUntilSuccess(new ConnectionTag(1, "127.0.0.1", 12345));
+        Assertions.assertTrue(client.isActive());
+        //Thread.sleep(1000);
+
+        System.out.println("server.shutdown()");
+        server.shutdown();
+        client.disconnect();
+    }
+
     @Test
     @DisplayName("Client Connect Switch")
     @SneakyThrows

@@ -25,6 +25,7 @@ public class ServerServiceHandler extends SimpleChannelInboundHandler {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         ctx.writeAndFlush(Unpooled.copiedBuffer("Hello Client", CharsetUtil.UTF_8));
+        System.out.println("[Server] send msg : Hello Client");
         activeListener.clientActivated(ctx.channel(), (InetSocketAddress) ctx.channel().remoteAddress());
         super.channelActive(ctx);
     }

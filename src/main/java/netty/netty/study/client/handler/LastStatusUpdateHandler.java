@@ -7,7 +7,7 @@ import netty.netty.study.data.LastStatus;
 
 @AllArgsConstructor
 public class LastStatusUpdateHandler extends SimpleChannelInboundHandler<String> {
-    final private LastStatus updateListener;
+    private final LastStatus updateListener;
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, String msg) throws Exception {
