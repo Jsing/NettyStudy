@@ -1,9 +1,10 @@
 package netty.netty.study.server.handler;
 
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.CharsetUtil;
 import netty.netty.study.data.LastStatus;
-import netty.netty.study.data.Updatable;
 import netty.netty.study.server.ClientActiveListener;
 
 import java.net.InetSocketAddress;
@@ -23,7 +24,7 @@ public class ServerServiceHandler extends SimpleChannelInboundHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-
+        ctx.writeAndFlush(Unpooled.copiedBuffer("Hello Client", CharsetUtil.UTF_8));
         activeListener.clientActivated(ctx.channel(), (InetSocketAddress) ctx.channel().remoteAddress());
         super.channelActive(ctx);
     }
