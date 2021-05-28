@@ -15,21 +15,20 @@ import java.util.concurrent.*;
 
 /**
  * Netty Tcp Client 기능을 제공합니다.
- * TODO : 추후 임의로 던지는 이벤트 메시지를 구조화하여 처리하도록 합니다.
- * TODO : ByteBuf ReferenceCount 관련된 내용을 정확하게 처리하도록 해야 합니다.
  */
 public class TcpClient implements ChannelExceptionListener {
     private final Bootstrap bootstrap = new Bootstrap();
     private final TcpClient.ConnectUntilSuccess connectUntilSuccess = new ConnectUntilSuccess();
     private final EventLoopTasks eventLoopTasks = new EventLoopTasks();
     private Channel channel;
-    private ConnectionTag triedConntecionTag;
+    private ConnectionTag triedConnectionTag;
     private boolean shouldRecoverConnect = true;
     private boolean shouldAlarmConnectFail = true;
+    private final int connectTimeoutMillis = 3000;
 
     public void init(ChannelInitializer<?> channelInitializer) {
-        final int connectTimeoutMillis = 3000;
-        final int nThreads = 2;
+        // TODO : 추후 이벤트 루프 쓰레드의 성능을 고려하여 쓰레드 개수를 조절해야 합니다.
+        final var nThreads = 2;
 
         Assert.isNull(bootstrap.config().group(), "you have to call this function in postConstruct()");
 
@@ -62,10 +61,10 @@ public class TcpClient implements ChannelExceptionListener {
         return connectOnce(tryingConnectionTag);
     }
 
-    public void connectUntilSuccess(ConnectionTag tryingConnectionTag) {
+    public boolean connectUntilSuccess(ConnectionTag tryingConnectionTag) {
         shouldAlarmConnectFail = true;
         disconnect();
-        connectUntilSuccess.sync(tryingConnectionTag);
+        return connectUntilSuccess.sync(tryingConnectionTag);
     }
 
     public Future<Void> beginConnectUntilSuccess(ConnectionTag tryingConnectionTag) {
@@ -85,7 +84,7 @@ public class TcpClient implements ChannelExceptionListener {
             }
             return false;
         } finally {
-            this.triedConntecionTag = tryingConnectionTag;
+            this.triedConnectionTag = tryingConnectionTag;
         }
 
         if (!channelFuture.isSuccess()) {
@@ -110,7 +109,7 @@ public class TcpClient implements ChannelExceptionListener {
                 channel = null;
             }
         } catch (Exception e) {
-            Messaging.error(triedConntecionTag.getEquipmentId(), toErrorMessage("trying to disconnect fails", triedConntecionTag, e));
+            Messaging.error(triedConnectionTag.getEquipmentId(), toErrorMessage("trying to disconnect fails", triedConnectionTag, e));
         }
     }
 
@@ -121,16 +120,16 @@ public class TcpClient implements ChannelExceptionListener {
      * @return 전송 결과
      */
     public boolean send(Object message) {
-        Assert.notNull(triedConntecionTag, "connectUntilSuccess() must be called before.");
+        Assert.notNull(triedConnectionTag, "connectUntilSuccess() must be called before.");
         if (channel == null) {
-            Messaging.error(triedConntecionTag.getEquipmentId(), toErrorMessage("trying to send fails", triedConntecionTag, new NullPointerException()));
+            Messaging.error(triedConnectionTag.getEquipmentId(), toErrorMessage("trying to send fails", triedConnectionTag, new NullPointerException()));
             return false;
         }
 
         try {
             channel.writeAndFlush(message);
         } catch (Exception e) {
-            Messaging.error(triedConntecionTag.getEquipmentId(), toErrorMessage("trying to send fails", triedConntecionTag, e));
+            Messaging.error(triedConnectionTag.getEquipmentId(), toErrorMessage("trying to send fails", triedConnectionTag, e));
             return false;
         }
         return true;
@@ -160,15 +159,15 @@ public class TcpClient implements ChannelExceptionListener {
 
     @Override
     public void channelInactive() {
-        triedConntecionTag.setConnected(false);
+        triedConnectionTag.setConnected(false);
         if (shouldRecoverConnect) {
-            connectUntilSuccess.begin(this.triedConntecionTag);
+            connectUntilSuccess.begin(this.triedConnectionTag);
         }
     }
 
     @Override
     public void exceptionCaught(Throwable cause) {
-        Messaging.error(triedConntecionTag.getEquipmentId(), toErrorMessage("Channel exception caught", triedConntecionTag, cause));
+        Messaging.error(triedConnectionTag.getEquipmentId(), toErrorMessage("Channel exception caught", triedConnectionTag, cause));
     }
 
     private String toErrorMessage(String description, ConnectionTag connectionTag, Throwable e) {
@@ -184,7 +183,7 @@ public class TcpClient implements ChannelExceptionListener {
 
         public boolean schedule(Runnable task, long initialDelay, long period, TimeUnit unit) {
             if (channel == null) {
-                Messaging.error(triedConntecionTag.getEquipmentId(), toErrorMessage("trying to schedule fails", triedConntecionTag, new NullPointerException()));
+                Messaging.error(triedConnectionTag.getEquipmentId(), toErrorMessage("trying to schedule fails", triedConnectionTag, new NullPointerException()));
                 return false;
             }
             ScheduledFuture<?> future = channel.eventLoop().scheduleAtFixedRate(task, initialDelay, period, unit);
@@ -222,13 +221,16 @@ public class TcpClient implements ChannelExceptionListener {
          * 연결 반복 실행 동기화 수행
          *
          * @param tryingConnectionTag 연결 정보
+         * @return
          */
-        public void sync(ConnectionTag tryingConnectionTag) {
+        public boolean sync(ConnectionTag tryingConnectionTag) {
             future = begin(tryingConnectionTag);
             try {
                 future.get();
+                return true;
             } catch (Exception e) {
                 e.printStackTrace();
+                return false;
             }
         }
 
@@ -259,10 +261,11 @@ public class TcpClient implements ChannelExceptionListener {
          * 연결 반복 실행 종료
          */
         public void stop() {
+            final int extraStopTimeoutMillis = 500;
             if (cancelEvent != null && cancelEvent.getCount() > 0) {
                 cancelEvent.countDown();
                 try {
-                    future.get(2000, TimeUnit.MILLISECONDS);
+                    future.get(connectTimeoutMillis + extraStopTimeoutMillis, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
