@@ -1,6 +1,6 @@
 <center><img src="https://user-images.githubusercontent.com/34666301/121111148-576f1e80-c849-11eb-8210-f03fb126fd62.png" width="20%" height="20%"></center>
 
-우주지상국 서브시스템들과 1:1 통신을 위한 Netty 기반 TCP 클라이언트 공통 모듈을 개발합니다.
+우주지상국 서브시스템들과 1:1 통신을 위한 Netty 기반 TCP 클라이언트 공통 모듈을 개발하였습니다. 
 <br/>
 
 # 주요 API 
