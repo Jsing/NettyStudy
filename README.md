@@ -50,8 +50,11 @@ Netty 프레임워크의 `Pipeline` 아키텍처는 개발자로 하여금 구�
 
 ### 3. 완벽한 수준의 메시지 구분 서비스
 TCP는 `스트림기반 프로토콜`이기 때문에 `메시지를 구분`해주는 로직이 사용자 코드에 반드시 추가되어야 합니다. 그러나 많은 개발자들이 위와 같은 필요를 알지 못하고, 일반적인 상황에서만 잘 동작하는 불안정한 코드를 작성하는 경우가 많은 것 같습니다. 
+
 - [Dealing with a Stream-based Transport
-](https://netty.io/4.0/api/io/netty/handler/codec/DelimiterBasedFrameDecoder.html)
+](https://netty.io/wiki/user-guide-for-4.x.html)
+
+![image](https://user-images.githubusercontent.com/34666301/121465849-55e05a80-c9f1-11eb-9f92-5b479c1b9d2f.png)
 
 Netty 에서는 다양한 형태의 `Frame Decoder`를 제공하기 때문에 위 요구사항을 개발자들이 이해하도록 설득력있게 설명할 수 있고, 구현하기도 무척 쉽습니다. 
 - [FixedLengthFrameDecoder](https://netty.io/4.0/api/io/netty/handler/codec/FixedLengthFrameDecoder.html)
