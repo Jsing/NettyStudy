@@ -1,6 +1,10 @@
+
+
 <center><img src="https://user-images.githubusercontent.com/34666301/121111148-576f1e80-c849-11eb-8210-f03fb126fd62.png" width="20%" height="20%"></center>
 
-우주지상국 서브시스템들과 1:1 통신을 위한 Netty 기반 TCP 클라이언트 공통 모듈을 개발하였습니다. 
+
+우주지상국 서브시스템들과 1:1 통신을 위한 Netty 기반 TCP 클라이언트 공통 모듈을 개발하였습니다. <br/>
+(※ 코드를 정리중에 있습니다. [TcpClient.java](https://github.com/Jsing/netty-tcp-client/blob/586628ab8ea225eede4940f11cee65a2d96e172d/src/main/java/netty/netty/study/client/TcpClient.java) 파일만 참조하실 것을 추천드립니다.)
 
 
 # 주요 API 
