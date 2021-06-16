@@ -21,7 +21,7 @@
 ### 1. 구조적 프로그래밍 가이드
 Netty 프레임워크의 `Pipeline` 아키텍처는 개발자가 구조적인 프로그래밍을 할 수 있도록 돕습니다. 예를 들면 다음과 같은 TCP 채널의 수신 처리 로직들이 개별적인 `Handler`로 구현되고 `Pipeline`에 의해 구조화 될 수 있습니다. 
 
-![image](https://user-images.githubusercontent.com/34666301/121465432-c5097f00-c9f0-11eb-847c-13245141b913.png)
+![image](https://user-images.githubusercontent.com/34666301/122204852-8c7b1100-ceda-11eb-9c31-072df26ebd28.png)
 ```
 1. 메시지 수신  
 2. 메시지 바운더리 구분
@@ -36,7 +36,7 @@ Netty 프레임워크의 `Pipeline` 아키텍처는 개발자가 구조적인 �
 ### 2. 높은 확장성 
 역시 `Pipeline` 아키텍처로 인하여 통신 처리 기능들을 확장하기 용이합니다. 그래서 소프트웨어를 `점진적으로 확장`해 나갈 수 있습니다. 예를 들면 `최소 기능 제품(MVP)`을 빠르게 만들어야 하는 경우 핵심 기능만 빠르게 만들고, 안정화 및 고도화된 기능들은 추후에 Pipeline 에 추가하기 쉽습니다. 그래서 초보개발자가 개발한 코드도 추후 개선해 나가고 확장해 나가기 쉽습니다. 
 
-![image](https://user-images.githubusercontent.com/34666301/121465481-d94d7c00-c9f0-11eb-9f77-3ab4403dc620.png)
+![image](https://user-images.githubusercontent.com/34666301/122204799-7ec58b80-ceda-11eb-9073-42a305cb4ec4.png)
 
 
 ```
